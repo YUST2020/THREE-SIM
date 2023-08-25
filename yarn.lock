@@ -5664,7 +5664,12 @@
     "neo-async" "^2.6.2"
     "schema-utils" "^3.0.0"
 
-"three@^0.155.0":
+"three-obj-mtl-loader@^1.0.3":
+  "integrity" "sha512-0z7BfyG6vYPY9RvxJvL4rq8PbNrF42Kn4zxeqTfeDzJN++2oKbtCQhxHs5vLULnDuCRTEyDFf5TYvO+1vnJ7KQ=="
+  "resolved" "https://registry.npmmirror.com/three-obj-mtl-loader/-/three-obj-mtl-loader-1.0.3.tgz"
+  "version" "1.0.3"
+
+"three@^0.155.0", "three@>= 0.91":
   "integrity" "sha512-sNgCYmDijnIqkD/bMfk+1pHg3YzsxW7V2ChpuP6HCQ8NiZr3RufsXQr8M3SSUMjW4hG+sUk7YbyuY0DncaDTJQ=="
   "resolved" "https://registry.npmmirror.com/three/-/three-0.155.0.tgz"
   "version" "0.155.0"
