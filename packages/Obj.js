@@ -1,24 +1,22 @@
 import * as THREE from "three";
-import { Mesh } from 'three'
+import { Object3D } from 'three'
 
-export default class Obj extends Mesh {
+export default class Obj extends Object3D {
   options;
   // position 位置信息 options：{}
   constructor(position = { x: 0, y: 0, z: 0 }, options = {}) {
     super()
-    this.geometry = new THREE.BoxGeometry(2, 2, 2)
-    this.material = new THREE.MeshMatcapMaterial({ color: 0xff0000 })
     this.options = options;
     // 设置形状材质
     const { x, y, z } = position
     // const size = this.getSize();
     this.position.set(x, y, z);
 
-    this.initBoundingBox();
-    
+    // this.initBoundingBox();
+
     // 标识要在initBoundingBox后面，否则会触发到copy
-    // 标识为可拖拽物体
-    this.isObj = true;
+    // 标识为可拖拽最外围
+    this.isOuter = true;
     // this.initDrag();
   }
   getSize() {
@@ -39,7 +37,7 @@ export default class Obj extends Mesh {
     for (let i of removeList) {
       this.remove(i);
     }
-    const cloneObj = new Mesh()
+    const cloneObj = new Object3D()
     cloneObj.copy(this);
     cloneObj.position.set(0, 0, 0);
     // 包围盒

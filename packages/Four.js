@@ -6,6 +6,9 @@ import {
   CSS2DObject,
 } from "three/addons/renderers/CSS2DRenderer.js";
 import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
+import Vue from 'vue'
+import TopOptions from './TopOptions'
+import LeftOptions from './LeftOptions.vue'
 export default class Four {
   constructor(dom) {
     this.dom = dom; // 外围dom元素
@@ -18,7 +21,10 @@ export default class Four {
     this.transformControls = null;
     this.curObj = null; // 当前选中object
     this.keyboard = {}; // 记录当前已按下的按钮
-    this.direction = new THREE.Vector3(); // 当前朝向的向量
+    this.state = {
+      mode: 'translate'
+    }
+
     this.init();
     this.initEvent();
     this.animate();
@@ -67,7 +73,8 @@ export default class Four {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableZoom = true;
     this.controls.enableKeys = true;
-    this.controls.dampingFactor = true;
+    // this.controls.enableDamping = true;
+    // this.controls.dampingFactor = 0.1;
 
     // 添加变换控制器
     this.transformControls = new TransformControls(
@@ -78,6 +85,8 @@ export default class Four {
       this.controls.enabled = !event.value;
       this.controls.enableZoom = !event.value;
     });
+    this.transformControls.translationSnap = 1
+    this.transformControls.rotationSnap = Math.PI / 12
     this.scene.add(this.transformControls);
 
     // 添加地面
@@ -87,68 +96,119 @@ export default class Four {
     );
     // plane.rotation.x = -Math.PI / 2;
     this.scene.add(plane);
-  }
 
+    this.initOptions()
+  }
+  // 挂载vue组件
+  initOptions() {
+    const topContainer = document.createElement('div')
+    this.dom.appendChild(topContainer)
+    const topDom = Vue.extend(TopOptions);
+    new topDom({
+      propsData: {
+        state: this.state,
+        emitMethods: {
+          setMode: (mode) => {
+            this.state.mode = mode
+            this.transformControls.setMode(mode)
+          }
+        }
+      }
+    }).$mount(topContainer)
+    const leftContainer = document.createElement('div')
+    this.dom.appendChild(leftContainer)
+    const LeftDom = Vue.extend(LeftOptions);
+    new LeftDom().$mount(leftContainer)
+  }
   initEvent() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    let timer = null
+    // 防止拖拽和点击事件同步触发 100ms内的拖拽视为点击，否则阻止点击事件
+    this.controls.addEventListener('start', () => {
+      timer = setTimeout(() => {
+        clearTimeout(timer)
+        timer = null
+      }, 100);
+    })
+    // 移动事件防抖
+    let moveTimer = null
+    // 标识当前鼠标位置对应的可交互物体
+    let object = null
+    // 设置边框，选中标签显示状态
+    const batchSetChildrenVisible = (obj, show, hover = false) => {
+      if (!obj) return
+      for (let child of obj.children) {
+        // 设置选中时外边框的显隐
+        if (hover ? child.isHoverBox : child.isSelectBox) {
+          child.visible = show;
+        }
+      }
+    };
     // 鼠标移动事件处理函数
     const onDocumentMouseMove = (event) => {
-      // 得到鼠标相对于容器的坐标
+      if (moveTimer) {
+        return
+      } else {
+        moveTimer = setTimeout(() => {
+          clearTimeout(moveTimer)
+          moveTimer = null
+        }, 100);
+      }
+      // 更新鼠标相对于容器的坐标
       mouse.x = (event.clientX / this.dom.clientWidth) * 2 - 1;
       mouse.y = -(event.clientY / this.dom.clientHeight) * 2 + 1;
+
+      // 更新鼠标当前的锁定元素
+      raycaster.setFromCamera(mouse, this.camera);
+      let intersects = raycaster.intersectObjects(this.scene.children, true).filter(val => val.object.type === 'Box3Helper');
+      batchSetChildrenVisible(object, false, true)
+      object = null
+      console.log(intersects);
+      for (const val of intersects) {
+        let cur = val.object
+        if (cur.type !== 'Box3Helper') {
+          continue
+        }
+        while (cur && !object) {
+          if (cur.isOuter) {
+            object = cur
+            break
+          }
+          cur = cur.parent
+        }
+        if (object) {
+          break
+        }
+      }
+      batchSetChildrenVisible(object, true, true)
     };
     document.addEventListener("mousemove", onDocumentMouseMove, false);
     const onDocumentClick = () => {
-      // 执行射线检测
-      raycaster.setFromCamera(mouse, this.camera);
-      let intersects = raycaster.intersectObjects(this.scene.children, true);
-      // 判断是否成功
-      if (intersects.length > 0) {
-        // 选取第一个可拖拽物体并对其执行交互
-        let object = intersects.find((val) => val.object.isObj)?.object;
-        console.log("objects:", intersects, object);
-        // 设置边框，选中标签显示状态
-        const batchSetChildrenVisible = (obj, show) => {
-          if (!obj) return
-          const removeList = [];
-          for (let child of obj.children) {
-            // 设置选中时外边框的显隐
-            if (child.isSelectBox) {
-              child.visible = show;
-            }
-            if (!show && child.type === "Object3D") {
-              removeList.push(child);
-            }
-          }
-          for (let rObj of removeList) {
-            obj.remove(rObj);
-          }
-        };
-        console.log(object, this.curObj, this.curObj === object);
+      if (!timer) return
+      if (object) {
+        // 选取第一个可拖拽物体并对其执行选中
+        console.log("object:", object);
+        // 当变更选中目标时隐藏之前的线框
         if (this.curObj && object && this.curObj !== object) {
           batchSetChildrenVisible(this.curObj, false);
         }
-        // 判断是否点击了空地 待修改，感觉这个判断逻辑可能翻车
-        if (intersects?.[0]?.object.type === 'TransformControlsPlane') {
-          this.transformControls.detach()
-          batchSetChildrenVisible(this.curObj, false);
-          this.curObj = null
-        }
-        if (object) {
-          batchSetChildrenVisible(object, true);
-          this.curObj = object;
-          this.transformControls.attach(this.curObj);
-          // 2d
-          const labelDiv = document.createElement("div");
-          labelDiv.innerHTML = "2d标签";
-          labelDiv.style.pointerEvents = "none";
-          labelDiv.style.backgroundColor = "#888888";
-          const labelObject = new CSS2DObject(labelDiv);
-          labelObject.position.set(0, 2, 0);
-          this.curObj.add(labelObject);
-        }
-        
+        batchSetChildrenVisible(object, true);
+        this.curObj = object;
+        this.transformControls.attach(this.curObj);
+        // 2d
+        const labelDiv = document.createElement("div");
+        labelDiv.innerHTML = "2d标签";
+        labelDiv.style.pointerEvents = "none";
+        labelDiv.style.backgroundColor = "#888888";
+        const labelObject = new CSS2DObject(labelDiv);
+        labelObject.position.set(0, 2, 0);
+        this.curObj.add(labelObject);
+        console.log(this.curObj);
+      } else {
+        this.transformControls.detach()
+        batchSetChildrenVisible(this.curObj, false);
+        this.curObj = null
       }
     };
     document.addEventListener("click", onDocumentClick, false);
@@ -167,21 +227,19 @@ export default class Four {
 
   animate() {
     requestAnimationFrame(() => this.animate());
-
     const initZ = this.camera.position.z
-    this.camera.getWorldDirection(this.direction);
-    this.direction.normalize();
+    const direction = new THREE.Vector3(); // 当前朝向的向量
+    this.camera.getWorldDirection(direction);
+    direction.normalize();
     const moveSpeed = 0.5
-    if (this.keyboard['KeyW']) this.camera.position.addScaledVector(this.direction, moveSpeed)
-    if (this.keyboard['KeyS']) this.camera.position.addScaledVector(this.direction, -moveSpeed)
+    if (this.keyboard['KeyW']) this.camera.position.addScaledVector(direction, moveSpeed)
+    if (this.keyboard['KeyS']) this.camera.position.addScaledVector(direction, -moveSpeed)
     const vertical = new THREE.Vector3();
-    vertical.crossVectors(this.direction, this.camera.up).normalize();
+    vertical.crossVectors(direction, this.camera.up).normalize();
     if (this.keyboard['KeyA']) this.camera.position.addScaledVector(vertical, -moveSpeed);
     if (this.keyboard['KeyD']) this.camera.position.addScaledVector(vertical, moveSpeed);
     this.camera.position.z = initZ
     if (this.keyboard['Space']) this.camera.position.z += moveSpeed;
-    if (this.keyboard['ControlShift']) this.camera.position.z += moveSpeed;
-    if (this.keyboard['ControlLeft']) this.camera.position.z -= moveSpeed;
 
     // this.controls.update()
     // 渲染场景
