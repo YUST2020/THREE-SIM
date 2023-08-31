@@ -9,6 +9,8 @@ import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
 import Vue from 'vue'
 import TopOptions from './TopOptions'
 import LeftOptions from './LeftOptions.vue'
+import TWEEN from "@tweenjs/tween.js"
+import Stats from 'three/addons/libs/stats.module.js'
 export default class Four {
   constructor(dom) {
     this.dom = dom; // 外围dom元素
@@ -24,7 +26,11 @@ export default class Four {
     this.state = {
       mode: 'translate'
     }
+    this.events = {}
+    this.stats = new Stats();
 
+    document.body.appendChild(this.stats.domElement);
+    this.stats.setMode(0)
     this.init();
     this.initEvent();
     this.animate();
@@ -97,6 +103,13 @@ export default class Four {
     // plane.rotation.x = -Math.PI / 2;
     this.scene.add(plane);
 
+    // 选中目标时需要的渲染器
+    this.pickingTexture = new THREE.WebGLRenderTarget( 1, 1, {
+      type: THREE.IntType,
+      format: THREE.RGBAIntegerFormat,
+      internalFormat: 'RGBA32I',
+    });
+
     this.initOptions()
   }
   // 挂载vue组件
@@ -161,10 +174,18 @@ export default class Four {
 
       // 更新鼠标当前的锁定元素
       raycaster.setFromCamera(mouse, this.camera);
-      let intersects = raycaster.intersectObjects(this.scene.children, true).filter(val => val.object.type === 'Box3Helper');
+      // 以包围盒作为物体识别的标识
+      const checkObjs = []
+      for (let outer of this.scene.children) {
+        for (let i of outer.children) {
+          if (i.type === 'Box3Helper') {
+            checkObjs.push(i)
+          }
+        }
+      }
+      let intersects = raycaster.intersectObjects(checkObjs, false)
       batchSetChildrenVisible(object, false, true)
       object = null
-      console.log(intersects);
       for (const val of intersects) {
         let cur = val.object
         if (cur.type !== 'Box3Helper') {
@@ -210,6 +231,7 @@ export default class Four {
         batchSetChildrenVisible(this.curObj, false);
         this.curObj = null
       }
+      this.dispatch('selectChange',this.curObj)
     };
     document.addEventListener("click", onDocumentClick, false);
     // 监听当前按下的按键，用于控制相机移动
@@ -224,7 +246,20 @@ export default class Four {
   add(obj) {
     this.scene.add(obj);
   }
-
+  addEvent(name, func) {
+    if (this.events[name]) {
+      this.events[name].push(func)
+    } else {
+      this.events[name] = [func]
+    }
+  }
+  dispatch(name) {
+    if (Array.isArray(this.events[name])) {
+      for (let func of this.events[name]) {
+        func(...Array.prototype.slice.call(arguments, 1))
+      }
+    }
+  }
   animate() {
     requestAnimationFrame(() => this.animate());
     const initZ = this.camera.position.z
@@ -241,16 +276,27 @@ export default class Four {
     this.camera.position.z = initZ
     if (this.keyboard['Space']) this.camera.position.z += moveSpeed;
 
-    // this.controls.update()
+    this.controls.update()
     // 渲染场景
     this.renderer.render(this.scene, this.camera);
     this.css2dRenderer.render(this.scene, this.camera);
     this.css3dRenderer.render(this.scene, this.camera);
+    this.stats.update();
+    TWEEN.update();
   }
+  // 获取包围盒的大小
   static getBoundingSize(obj) {
     let boundingBox = new THREE.Box3().setFromObject(obj);
     let size = new THREE.Vector3();
     boundingBox.getSize(size);
     return size;
+  }
+  // 获取没被缩放前的包围盒的大小
+  static getOriginSize(obj) {
+    const size = Four.getBoundingSize(obj)
+    size.x /= obj.scale.x
+    size.y /= obj.scale.y
+    size.z /= obj.scale.z
+    return size
   }
 }

@@ -1,17 +1,20 @@
 import * as THREE from "three";
 import { Object3D } from 'three'
-
+import TWEEN from "@tweenjs/tween.js"
 export default class Obj extends Object3D {
-  options;
   // position 位置信息 options：{}
   constructor(position = { x: 0, y: 0, z: 0 }, options = {}) {
     super()
-    this.options = options;
+    this.options = { 
+      id: Math.random(),
+      speed: 1,
+      ...options 
+    };
+    this.isMoving = false
     // 设置形状材质
     const { x, y, z } = position
     // const size = this.getSize();
     this.position.set(x, y, z);
-
     // this.initBoundingBox();
 
     // 标识要在initBoundingBox后面，否则会触发到copy
@@ -155,5 +158,27 @@ export default class Obj extends Object3D {
     // this.arrowX = arrowX;
     // this.arrowY = arrowY;
     // this.arrowZ = arrowZ;
+  }
+  // 以绝对坐标系为基准移动
+  async moveTo (toPosition = {}) {
+    const {x,y,z} = toPosition
+    const moveAxis = (pos) => {
+      return new Promise((resolve) => {
+        new TWEEN.Tween(this.position)
+        .to({...pos}, 4000)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+        .onComplete(() => { resolve() })
+      })
+    }
+    if (x || x === 0) {
+      await moveAxis({x})
+    }
+    if (y || y === 0) {
+      await moveAxis({y})
+    }
+    if (z || z === 0) {
+      await moveAxis({z})
+    }
   }
 }

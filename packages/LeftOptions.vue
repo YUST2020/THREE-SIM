@@ -4,7 +4,7 @@
             <span style="color: #fff;font-size: 30px;">+</span>
         </div>
         <div class="options-outer" @click.stop>
-            <div v-for="item in options" :key="item.title" class="options-btn">图片</div>
+            <div v-for="item in options" :key="item.title" class="options-btn" draggable>图片</div>
         </div>
     </div>
     
