@@ -1,29 +1,18 @@
 <template>
   <div id="app">
     <div ref="container" style="width: 100vw;height: 100vh;"></div> 
-    <div v-if="curObj" style="background-color: #fff;position: absolute;right: 100px;top: 100px">
-      长<input :value="curObj.scale.x * originSize.x" @input="(e) => lenInput(e,'x')"><br>
-      宽<input :value="curObj.scale.y * originSize.y" @input="(e) => lenInput(e,'y')"><br>
-      高<input :value="curObj.scale.z * originSize.z" @input="(e) => lenInput(e,'z')"><br>
-      x<input v-model="curObj.position.x"><br>
-      y<input v-model="curObj.position.y"><br>
-      z<input v-model="curObj.position.z"><br>
-      x旋转<input :value="Math.round(180 * curObj.rotation.x / Math.PI)" @input="(e) => rotateInput(e,'x')"><br>
-      y旋转<input :value="Math.round(180 * curObj.rotation.y / Math.PI)" @input="(e) => rotateInput(e,'y')"><br>
-      z旋转<input :value="Math.round(180 * curObj.rotation.z / Math.PI)" @input="(e) => rotateInput(e,'z')"><br>
-      x缩放<input v-model="curObj.scale.x"><br>
-      y缩放<input v-model="curObj.scale.y"><br>
-      z缩放<input v-model="curObj.scale.z"><br>
-    </div>
   </div>
 </template>
 
 <script>
+// import { Four,Obj,ModelObj } from '../dist/laser-scene.umd.min.js'
+// import '../dist/laser-scene.css'
 import Four from '../packages/Four'
 import Obj from '../packages/Obj'
 import ModelObj from '../packages/ModelObj'
 import * as THREE from 'three'
-
+import VueLabel from './VueLabel.vue'
+import Vue from 'vue'
 class CustomObj1 extends Obj {
   constructor() {
     super(...arguments);
@@ -52,6 +41,7 @@ export default {
     }
   },
   mounted() {
+    console.log(Four);
     this.four = new Four(this.$refs.container)
     // 放物体进来
     let pos = [
@@ -72,24 +62,18 @@ export default {
     const model = new ModelObj({x: 0,y:0,z:0})
     console.log(model);
     this.four.add(model)
-    // model.moveTo({x: 20,y:20,z: 20})
+    model.moveTo({x: 20,y:20,z: 20})
     
-    this.four.addEvent('selectChange', (curObj) => {
-      this.curObj = curObj
-      if (curObj) {
-        this.originSize = Four.getOriginSize(this.curObj)
-      }
+    this.four.addEvent('selectChange', (obj) => {
+      if (!obj) return
+      const dom = document.createElement('div')
+      const vueComp = Vue.extend(VueLabel);
+      new vueComp().$mount(dom)
+      this.four.add2DLabel(obj,dom)
     })
   },
   methods: {
-    lenInput(e, axis) {
-      if (e.target.value)
-        this.curObj.scale[axis] = Number(e.target.value) / this.originSize[axis]
-    },
-    rotateInput(e,axis) {
-      if (e.target.value)
-        this.curObj.rotation[axis] = e.target.value * Math.PI / 180
-    }
+    
   }
 }
 </script>

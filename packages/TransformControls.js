@@ -232,7 +232,6 @@ class TransformControls extends Object3D {
       pointer.button !== 0
     )
       return;
-
     if (this.axis !== null) {
       _raycaster.setFromCamera(pointer, this.camera);
 
@@ -780,7 +779,9 @@ class TransformControlsGizmo extends Object3D {
     const bottomGeometry = new TorusGeometry(0.4, 0.02, 16, 100, Math.PI / 2);
     // 实际圆弧角可拖拽的物体
     const bottomPickGeometry = new TorusGeometry(0.4, 0.04, 16, 100, Math.PI / 2);
-
+    // 旋转是的圆环
+    const ringGeometry = new TorusGeometry(0.4, 0.02, 16, 100, Math.PI * 2)
+    
     const scaleHandleGeometry = new BoxGeometry(0.08, 0.08, 0.08);
     scaleHandleGeometry.translate(0, 0.04, 0);
 
@@ -844,35 +845,7 @@ class TransformControlsGizmo extends Object3D {
       RZ: [[new Mesh(bottomGeometry, matLightBlue), [0, 0, 0], [0, 0, 0]]],
       RY: [[new Mesh(bottomGeometry, matLightGreen), [0, 0, 0], [Math.PI / 2, 0, 0]]],
       RX: [[new Mesh(bottomGeometry, matLightRed), [0, 0, 0], [0, -Math.PI / 2, 0]]],
-      // XY: [
-      //   [
-      //     new Mesh(
-      //       new BoxGeometry(0.15, 0.15, 0.01),
-      //       matBlueTransparent.clone()
-      //     ),
-      //     [0.15, 0.15, 0],
-      //   ],
-      // ],
-      // YZ: [
-      //   [
-      //     new Mesh(
-      //       new BoxGeometry(0.15, 0.15, 0.01),
-      //       matRedTransparent.clone()
-      //     ),
-      //     [0, 0.15, 0.15],
-      //     [0, Math.PI / 2, 0],
-      //   ],
-      // ],
-      // XZ: [
-      //   [
-      //     new Mesh(
-      //       new BoxGeometry(0.15, 0.15, 0.01),
-      //       matGreenTransparent.clone()
-      //     ),
-      //     [0.15, 0, 0.15],
-      //     [-Math.PI / 2, 0, 0],
-      //   ],
-      // ],
+      // SRZ: [[new Mesh(ringGeometry, matLightBlue), [0, 0, 1], [0, 0, 0]]]
     };
     // 触发hover时的碰撞体积
     const pickerTranslate = {
@@ -881,23 +854,13 @@ class TransformControlsGizmo extends Object3D {
           new Mesh(new CylinderGeometry(0.1, 0, 0.6, 4), matInvisible),
           [0.3, 0, 0],
           [0, 0, -Math.PI / 2],
-        ],
-        // [
-        //   new Mesh(new CylinderGeometry(0.2, 0, 0.6, 4), matInvisible),
-        //   [-0.3, 0, 0],
-        //   [0, 0, Math.PI / 2],
-        // ],
+        ]
       ],
       Y: [
         [
           new Mesh(new CylinderGeometry(0.1, 0, 0.6, 4), matInvisible),
           [0, 0.3, 0],
         ],
-        // [
-        //   new Mesh(new CylinderGeometry(0.2, 0, 0.6, 4), matInvisible),
-        //   [0, -0.3, 0],
-        //   [0, 0, Math.PI],
-        // ],
       ],
       Z: [
         [
@@ -905,36 +868,11 @@ class TransformControlsGizmo extends Object3D {
           [0, 0, 0.3],
           [Math.PI / 2, 0, 0],
         ],
-        // [
-        //   new Mesh(new CylinderGeometry(0.2, 0, 0.6, 4), matInvisible),
-        //   [0, 0, -0.3],
-        //   [-Math.PI / 2, 0, 0],
-        // ],
       ],
       XY: [[new Mesh(new OctahedronGeometry(0.05, 0), matInvisible)]],
-      RZ: [[new Mesh(bottomPickGeometry, matInvisible), [0.0, 0, 0], [0, 0, 0]]],
+      RZ: [[new Mesh(bottomPickGeometry, matInvisible), [0, 0, 0], [0, 0, 0]]],
       RY: [[new Mesh(bottomPickGeometry, matInvisible), [0, 0, 0], [Math.PI / 2, 0, 0]]],
       RX: [[new Mesh(bottomPickGeometry, matInvisible), [0, 0, 0], [0, -Math.PI / 2, 0]]],
-      // XY: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.2, 0.2, 0.01), matInvisible),
-      //     [0.15, 0.15, 0],
-      //   ],
-      // ],
-      // YZ: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.2, 0.2, 0.01), matInvisible),
-      //     [0, 0.15, 0.15],
-      //     [0, Math.PI / 2, 0],
-      //   ],
-      // ],
-      // XZ: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.2, 0.2, 0.01), matInvisible),
-      //     [0.15, 0, 0.15],
-      //     [-Math.PI / 2, 0, 0],
-      //   ],
-      // ],
     };
 
     const helperTranslate = {
@@ -1069,21 +1007,11 @@ class TransformControlsGizmo extends Object3D {
         ],
         [new Mesh(lineGeometry2, matRed), [0, 0, 0], [0, 0, -Math.PI / 2]],
         [new Mesh(new OctahedronGeometry(0.06), matRed), [0.3, 0, 0], [0, 0, 0]]
-        // [
-        //   new Mesh(scaleHandleGeometry, matRed),
-        //   [-0.5, 0, 0],
-        //   [0, 0, Math.PI / 2],
-        // ],
       ],
       Y: [
         [new Mesh(arrowGeometry, matGreen), [0, 0.5, 0]],
         [new Mesh(lineGeometry2, matGreen)],
         [new Mesh(new OctahedronGeometry(0.06), matGreen.clone()), [0, 0.3, 0], [0, 0, 0]]
-        // [
-        //   new Mesh(scaleHandleGeometry, matGreen),
-        //   [0, -0.5, 0],
-        //   [0, 0, Math.PI],
-        // ],
       ],
       Z: [
         [
@@ -1093,35 +1021,10 @@ class TransformControlsGizmo extends Object3D {
         ],
         [new Mesh(lineGeometry2, matBlue), [0, 0, 0], [Math.PI / 2, 0, 0]],
         [new Mesh(new OctahedronGeometry(0.06), matBlue), [0, 0, 0.3], [0, 0, 0]]
-        // [
-        //   new Mesh(scaleHandleGeometry, matBlue),
-        //   [0, 0, -0.5],
-        //   [-Math.PI / 2, 0, 0],
-        // ],
       ],
-      // XY: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.15, 0.15, 0.01), matBlueTransparent),
-      //     [0.15, 0.15, 0],
-      //   ],
-      // ],
-      // YZ: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.15, 0.15, 0.01), matRedTransparent),
-      //     [0, 0.15, 0.15],
-      //     [0, Math.PI / 2, 0],
-      //   ],
-      // ],
-      // XZ: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.15, 0.15, 0.01), matGreenTransparent),
-      //     [0.15, 0, 0.15],
-      //     [-Math.PI / 2, 0, 0],
-      //   ],
-      // ],
-      // XYZ: [
-      //   [new Mesh(new BoxGeometry(0.1, 0.1, 0.1), matWhiteTransparent.clone())],
-      // ],
+      XYZ: [
+        [new Mesh(new BoxGeometry(0.1, 0.1, 0.1), matWhiteTransparent.clone())],
+      ],
     };
 
     const pickerScale = {
@@ -1160,29 +1063,9 @@ class TransformControlsGizmo extends Object3D {
           [-Math.PI / 2, 0, 0],
         ],
       ],
-      // XY: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.2, 0.2, 0.01), matInvisible),
-      //     [0.15, 0.15, 0],
-      //   ],
-      // ],
-      // YZ: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.2, 0.2, 0.01), matInvisible),
-      //     [0, 0.15, 0.15],
-      //     [0, Math.PI / 2, 0],
-      //   ],
-      // ],
-      // XZ: [
-      //   [
-      //     new Mesh(new BoxGeometry(0.2, 0.2, 0.01), matInvisible),
-      //     [0.15, 0, 0.15],
-      //     [-Math.PI / 2, 0, 0],
-      //   ],
-      // ],
-      // XYZ: [
-      //   [new Mesh(new BoxGeometry(0.2, 0.2, 0.2), matInvisible), [0, 0, 0]],
-      // ],
+      XYZ: [
+        [new Mesh(new BoxGeometry(0.2, 0.2, 0.2), matInvisible), [0, 0, 0]],
+      ],
     };
 
     const helperScale = {
@@ -1215,6 +1098,12 @@ class TransformControlsGizmo extends Object3D {
       ],
     };
 
+    
+    const rotateRing = {
+      RZ: [[new Mesh(ringGeometry, matLightBlue), [0, 0, 0], [0, 0, 0]]],
+      RY: [[new Mesh(ringGeometry, matLightGreen), [0, 0, 0], [Math.PI / 2, 0, 0]]],
+      RX: [[new Mesh(ringGeometry, matLightRed), [0, 0, 0], [0, -Math.PI / 2, 0]]],
+    }
     // #endregion
 
     // Creates an Object3D with gizmos described in custom hierarchy definition.
@@ -1247,7 +1136,7 @@ class TransformControlsGizmo extends Object3D {
           }
 
           object.updateMatrix();
-          // 这里是为了改变对象的形状又不影响原始对象
+        
           const tempGeometry = object.geometry.clone();
           tempGeometry.applyMatrix4(object.matrix);
           object.geometry = tempGeometry;
@@ -1279,6 +1168,7 @@ class TransformControlsGizmo extends Object3D {
     this.add((this.helper["translate"] = setupGizmo(helperTranslate)));
     this.add((this.helper["rotate"] = setupGizmo(helperRotate)));
     this.add((this.helper["scale"] = setupGizmo(helperScale)));
+    // this.add((setupGizmo(rotateRing)));
 
     // Pickers should be hidden always
 

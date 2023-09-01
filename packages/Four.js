@@ -11,6 +11,10 @@ import TopOptions from './TopOptions'
 import LeftOptions from './LeftOptions.vue'
 import TWEEN from "@tweenjs/tween.js"
 import Stats from 'three/addons/libs/stats.module.js'
+import RightConfig from './RightConfig.vue'
+import { getBoundingSize, getOriginSize } from './utils/object'
+
+
 export default class Four {
   constructor(dom) {
     this.dom = dom; // 外围dom元素
@@ -23,6 +27,7 @@ export default class Four {
     this.transformControls = null;
     this.curObj = null; // 当前选中object
     this.keyboard = {}; // 记录当前已按下的按钮
+    this.configInstance = null; // 右侧菜单的实例对象
     this.state = {
       mode: 'translate'
     }
@@ -39,7 +44,7 @@ export default class Four {
   init() {
     // 创建场景
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xfdf5e6); // 添加背景颜色
+    this.scene.background = new THREE.Color(0x2E3138); // 添加背景颜色
 
     // 创建相机
     this.camera = new THREE.PerspectiveCamera(
@@ -98,13 +103,19 @@ export default class Four {
     // 添加地面
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(40, 40, 40),
-      new THREE.MeshBasicMaterial({ color: 0xf1f3f4, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({ color: 0x1E2229, side: THREE.DoubleSide })
     );
     // plane.rotation.x = -Math.PI / 2;
     this.scene.add(plane);
+    // 地面边框
+    const borderGeometry = new THREE.PlaneGeometry(41, 41, 41); // 大一点的几何体
+    const borderColor = new THREE.Color(0x152F61); // 蓝色边框颜色
+    const borderMaterial = new THREE.LineBasicMaterial({ color: borderColor, linewidth: 2 });
+    const border = new THREE.LineSegments(new THREE.EdgesGeometry(borderGeometry), borderMaterial);
+    this.scene.add(border);
 
     // 选中目标时需要的渲染器
-    this.pickingTexture = new THREE.WebGLRenderTarget( 1, 1, {
+    this.pickingTexture = new THREE.WebGLRenderTarget(1, 1, {
       type: THREE.IntType,
       format: THREE.RGBAIntegerFormat,
       internalFormat: 'RGBA32I',
@@ -114,10 +125,15 @@ export default class Four {
   }
   // 挂载vue组件
   initOptions() {
-    const topContainer = document.createElement('div')
-    this.dom.appendChild(topContainer)
-    const topDom = Vue.extend(TopOptions);
-    new topDom({
+    const mountVueToDom = (comp, options = {}) => {
+      const container = document.createElement('div')
+      this.dom.appendChild(container)
+      const vueComp = Vue.extend(comp);
+      const instance = new vueComp(options)
+      instance.$mount(container)
+      return instance
+    }
+    mountVueToDom(TopOptions, {
       propsData: {
         state: this.state,
         emitMethods: {
@@ -127,11 +143,9 @@ export default class Four {
           }
         }
       }
-    }).$mount(topContainer)
-    const leftContainer = document.createElement('div')
-    this.dom.appendChild(leftContainer)
-    const LeftDom = Vue.extend(LeftOptions);
-    new LeftDom().$mount(leftContainer)
+    })
+    mountVueToDom(LeftOptions)
+    this.configInstance = mountVueToDom(RightConfig)
   }
   initEvent() {
     const raycaster = new THREE.Raycaster();
@@ -169,9 +183,9 @@ export default class Four {
         }, 100);
       }
       // 更新鼠标相对于容器的坐标
-      mouse.x = (event.clientX / this.dom.clientWidth) * 2 - 1;
-      mouse.y = -(event.clientY / this.dom.clientHeight) * 2 + 1;
-
+      mouse.x = (event.offsetX / this.dom.clientWidth) * 2 - 1;
+      mouse.y = -(event.offsetY / this.dom.clientHeight) * 2 + 1;
+      console.log(event, mouse.x, mouse.y, event.clientX, event.clientY, this.dom.clientWidth, this.dom.clientHeight);
       // 更新鼠标当前的锁定元素
       raycaster.setFromCamera(mouse, this.camera);
       // 以包围盒作为物体识别的标识
@@ -204,7 +218,7 @@ export default class Four {
       }
       batchSetChildrenVisible(object, true, true)
     };
-    document.addEventListener("mousemove", onDocumentMouseMove, false);
+    this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
     const onDocumentClick = () => {
       if (!timer) return
       if (object) {
@@ -218,22 +232,18 @@ export default class Four {
         this.curObj = object;
         this.transformControls.attach(this.curObj);
         // 2d
-        const labelDiv = document.createElement("div");
-        labelDiv.innerHTML = "2d标签";
-        labelDiv.style.pointerEvents = "none";
-        labelDiv.style.backgroundColor = "#888888";
-        const labelObject = new CSS2DObject(labelDiv);
-        labelObject.position.set(0, 2, 0);
-        this.curObj.add(labelObject);
+
         console.log(this.curObj);
       } else {
         this.transformControls.detach()
         batchSetChildrenVisible(this.curObj, false);
         this.curObj = null
       }
-      this.dispatch('selectChange',this.curObj)
+      this.dispatch('selectChange', this.curObj)
+      this.configInstance.init(this.curObj)
     };
-    document.addEventListener("click", onDocumentClick, false);
+    console.log(this.dom);
+    this.dom.addEventListener("click", onDocumentClick, false);
     // 监听当前按下的按键，用于控制相机移动
     document.addEventListener('keydown', (event) => {
       this.keyboard[event.code] = true;
@@ -245,6 +255,14 @@ export default class Four {
   // 添加obj到场景内
   add(obj) {
     this.scene.add(obj);
+  }
+  // 添加2d标签
+  // obj: 需要添加至的obj dom：dom元素 position：相对定位
+  add2DLabel(obj, dom, position = { x: 0, y: 0, z: 0 }) {
+    const labelObject = new CSS2DObject(dom);
+    const { x, y, z } = position
+    labelObject.position.set(x, y, z);
+    obj.add(labelObject);
   }
   addEvent(name, func) {
     if (this.events[name]) {
@@ -286,17 +304,10 @@ export default class Four {
   }
   // 获取包围盒的大小
   static getBoundingSize(obj) {
-    let boundingBox = new THREE.Box3().setFromObject(obj);
-    let size = new THREE.Vector3();
-    boundingBox.getSize(size);
-    return size;
+    return getBoundingSize(obj);
   }
   // 获取没被缩放前的包围盒的大小
   static getOriginSize(obj) {
-    const size = Four.getBoundingSize(obj)
-    size.x /= obj.scale.x
-    size.y /= obj.scale.y
-    size.z /= obj.scale.z
-    return size
+    return getOriginSize(obj)
   }
 }
