@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <div ref="container" style="width: 100vw;height: 100vh;"></div> 
+    <div ref="container" style="width: 100vw;height: 100vh;"></div>
+    <button style="position: absolute;bottom: 30px;right: 30px;" @click="save">保存</button>
   </div>
 </template>
 
@@ -8,29 +9,31 @@
 // import { Four,Obj,ModelObj } from '../dist/laser-scene.umd.min.js'
 // import '../dist/laser-scene.css'
 import Four from '../packages/Four'
-import Obj from '../packages/Obj'
+// import Obj from '../packages/Obj'
 import ModelObj from '../packages/ModelObj'
-import * as THREE from 'three'
+// import * as THREE from 'three'
 import VueLabel from './VueLabel.vue'
 import Vue from 'vue'
-class CustomObj1 extends Obj {
-  constructor() {
-    super(...arguments);
-    let geometry = new THREE.SphereGeometry(1, 32, 32);
-    let material = new THREE.MeshMatcapMaterial({ color: 0xff0000 })
-    this.add(new THREE.Mesh(geometry,material))
-    super.initBoundingBox();
-  }
-}
-class CustomObj2 extends Obj {
-  constructor() {
-    super(...arguments);
-    let geometry = new THREE.BoxGeometry(1);
-    let material = new THREE.MeshMatcapMaterial({ color: 0xff0000 })
-    this.add(new THREE.Mesh(geometry,material))
-    super.initBoundingBox();
-  }
-}
+import pos from './positionData'
+// class CustomObj1 extends Obj {
+//   constructor() {
+//     super(...arguments);
+//     let geometry = new THREE.SphereGeometry(1, 32, 32);
+//     let material = new THREE.MeshMatcapMaterial({ color: 0xff0000 })
+//     this.add(new THREE.Mesh(geometry,material))
+//     super.initBoundingBox();
+//   }
+// }
+// class CustomObj2 extends Obj {
+//   constructor() {
+//     super(...arguments);
+//     let geometry = new THREE.BoxGeometry(1);
+//     let material = new THREE.MeshMatcapMaterial({ color: 0xff0000 })
+//     this.add(new THREE.Mesh(geometry,material))
+//     super.initBoundingBox();
+//   }
+// }
+
 export default {
   name: 'App',
   data() {
@@ -41,39 +44,72 @@ export default {
     }
   },
   mounted() {
-    console.log(Four);
+    console.log(pos);
     this.four = new Four(this.$refs.container)
-    // 放物体进来
-    let pos = [
-      [10, 0, 0],
-      [0, 0, 10],
-      [10, 0, 5],
-      [10, 10, 0],
-      [0, 5, 5],
-    ];
-    let id = 1
-    for (let p of pos) {
-      let obj = 
-      Math.random() > 0.5 ?
-        new CustomObj1({ x: p[0], y: p[1], z: p[2] }, {id: id++}) :
-        new CustomObj2({ x: p[0], y: p[1], z: p[2] }, {id: id++});
+    for (let i of pos) {
+      const obj = new ModelObj(i, null, i.path)
       this.four.add(obj)
+      const element = document.createElement('div');
+      element.style.backgroundColor = 'gray';
+      element.innerText = i.path;
+      this.four.add2DLabel(obj,element)
     }
-    const model = new ModelObj({x: 0,y:0,z:0})
-    console.log(model);
-    this.four.add(model)
-    model.moveTo({x: 20,y:20,z: 20})
-    
+    // // #region 车
+    // const endCar = new ModelObj({ x: 10, y: 0, z: 0 }, null, 'model/endCar.obj')
+    // this.four.add(endCar)
+    // const machineBed = new ModelObj({ x: 0, y: 0, z: 0 }, null, 'model/machineBed.obj')
+    // this.four.add(machineBed)
+    // const outCar = new ModelObj({ x: 20, y: 0, z: 0 }, null, 'model/outCar.obj')
+    // this.four.add(outCar)
+    // // #endregion
+    // // #region 料库相关
+    // const wareHousePallet = new ModelObj({ x: 30, y: 0, z: 0 }, null, 'model/wareHouse/pallet.obj')
+    // this.four.add(wareHousePallet)
+    // const shelf = new ModelObj({x: 40,y:0,z:0}, null, 'model/wareHouse/shelf.obj')
+    // this.four.add(shelf)
+    // const updown = new ModelObj({ x: 50, y: 0, z: 0 }, null, 'model/wareHouse/updown.obj')
+    // this.four.add(updown)
+    // // #endregion
+    // // #region 上料
+    // const upfix = new ModelObj({ x: 0, y: 10, z: 0 }, null, 'model/up/fix.obj')
+    // this.four.add(upfix)
+    // const upZ = new ModelObj({ x: 0, y: 20, z: 0 }, null, 'model/up/upZ.obj')
+    // this.four.add(upZ)
+    // // #endregion
+    // // #region 下料
+    // const left = new ModelObj({ x: 0, y: 0, z: 10 }, null, 'model/down/left.obj')
+    // this.four.add(left)
+    // const right = new ModelObj({ x: 0, y: 0, z: 20 }, null, 'model/down/right.obj')
+    // this.four.add(right)
+    // const downZ = new ModelObj({ x: 0, y: 0, z: 30 }, null, 'model/down/downZ.obj')
+    // this.four.add(downZ)
+    // const downFixed = new ModelObj({ x: 0, y: 0, z: 40 }, null, 'model/down/fixed.obj')
+    // this.four.add(downFixed)
+    // // #endregion
+    // model.moveTo({x: 20,y:20,z: 20})
+
     this.four.addEvent('selectChange', (obj) => {
       if (!obj) return
       const dom = document.createElement('div')
       const vueComp = Vue.extend(VueLabel);
       new vueComp().$mount(dom)
-      this.four.add2DLabel(obj,dom)
+      this.four.add2DLabel(obj, dom)
     })
   },
   methods: {
-    
+    save() {
+      console.log(this.four.objs);
+      const data = this.four.objs.map(val => {
+        const { x, y, z } = val.position
+        const { x: scaleX, y: scaleY, z: scaleZ } = val.scale
+        const { x: rotateX, y: rotateY, z: rotateZ } = val.rotation
+        return {
+          x, y, z, scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ, path: val.options.path
+        }
+      })
+      console.log(data);
+      console.log(JSON.stringify(data));
+    }
   }
 }
 </script>
@@ -86,7 +122,9 @@ export default {
   color: #2c3e50;
   position: relative;
 }
-body,html {
+
+body,
+html {
   margin: 0;
   padding: 0;
 }

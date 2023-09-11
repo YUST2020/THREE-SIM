@@ -3,7 +3,7 @@ import { Object3D } from 'three'
 import TWEEN from "@tweenjs/tween.js"
 export default class Obj extends Object3D {
   // position 位置信息 options：{}
-  constructor(position = { x: 0, y: 0, z: 0 }, options = {}) {
+  constructor(position, options = {}) {
     super()
     this.options = { 
       id: Math.random(),
@@ -12,9 +12,17 @@ export default class Obj extends Object3D {
     };
     this.isMoving = false
     // 设置形状材质
-    const { x, y, z } = position
+    const posInfo = { 
+      x: 0, y: 0,  z: 0, 
+      scaleX: 1, scaleY: 1, scaleZ: 1,
+      rotateX: 0,rotateY: 0, rotateZ: 0,
+      ...position
+    }
+    const { x, y, z, scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ } = posInfo
     // const size = this.getSize();
     this.position.set(x, y, z);
+    this.scale.set(scaleX, scaleY, scaleZ)
+    this.rotation.set(rotateX, rotateY, rotateZ)
     // this.initBoundingBox();
 
     // 标识要在initBoundingBox后面，否则会触发到copy
@@ -43,6 +51,8 @@ export default class Obj extends Object3D {
     const cloneObj = new Object3D()
     cloneObj.copy(this);
     cloneObj.position.set(0, 0, 0);
+    cloneObj.scale.set(1,1,1)
+    cloneObj.rotation.set(0,0,0)
     // 包围盒
     const boundingBox = new THREE.Box3().setFromObject(cloneObj);
     // hover时触发的

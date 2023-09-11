@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "test": "vue-cli-service serve",
+    "test": "vue-cli-service serve --no-hot",
     "build": "vue-cli-service build --target lib --name laser-scene --dest dist ./packages/index.js",
     "lint": "vue-cli-service lint"
   },

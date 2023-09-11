@@ -28,6 +28,7 @@ export default class Four {
     this.curObj = null; // 当前选中object
     this.keyboard = {}; // 记录当前已按下的按钮
     this.configInstance = null; // 右侧菜单的实例对象
+    this.objs = [] // 当前场景种的全部对象
     this.state = {
       mode: 'translate'
     }
@@ -53,7 +54,7 @@ export default class Four {
       0.1,
       1000
     );
-    this.camera.position.set(10, 10, 10);
+    this.camera.position.set(50, 50, 50);
     // this.camera.lookAt(new THREE.Vector3(0, 0, 0));
     this.camera.up.set(0, 0, 1)
 
@@ -96,19 +97,19 @@ export default class Four {
       this.controls.enabled = !event.value;
       this.controls.enableZoom = !event.value;
     });
-    this.transformControls.translationSnap = 1
+    this.transformControls.translationSnap = 0.01
     this.transformControls.rotationSnap = Math.PI / 12
     this.scene.add(this.transformControls);
 
     // 添加地面
     const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(40, 40, 40),
+      new THREE.PlaneGeometry(120, 120, 120),
       new THREE.MeshBasicMaterial({ color: 0x1E2229, side: THREE.DoubleSide })
     );
     // plane.rotation.x = -Math.PI / 2;
     this.scene.add(plane);
     // 地面边框
-    const borderGeometry = new THREE.PlaneGeometry(41, 41, 41); // 大一点的几何体
+    const borderGeometry = new THREE.PlaneGeometry(121, 121, 121); // 大一点的几何体
     const borderColor = new THREE.Color(0x152F61); // 蓝色边框颜色
     const borderMaterial = new THREE.LineBasicMaterial({ color: borderColor, linewidth: 2 });
     const border = new THREE.LineSegments(new THREE.EdgesGeometry(borderGeometry), borderMaterial);
@@ -185,7 +186,6 @@ export default class Four {
       // 更新鼠标相对于容器的坐标
       mouse.x = (event.offsetX / this.dom.clientWidth) * 2 - 1;
       mouse.y = -(event.offsetY / this.dom.clientHeight) * 2 + 1;
-      console.log(event, mouse.x, mouse.y, event.clientX, event.clientY, this.dom.clientWidth, this.dom.clientHeight);
       // 更新鼠标当前的锁定元素
       raycaster.setFromCamera(mouse, this.camera);
       // 以包围盒作为物体识别的标识
@@ -198,6 +198,7 @@ export default class Four {
         }
       }
       let intersects = raycaster.intersectObjects(checkObjs, false)
+      console.log(intersects);
       batchSetChildrenVisible(object, false, true)
       object = null
       for (const val of intersects) {
@@ -231,8 +232,6 @@ export default class Four {
         batchSetChildrenVisible(object, true);
         this.curObj = object;
         this.transformControls.attach(this.curObj);
-        // 2d
-
         console.log(this.curObj);
       } else {
         this.transformControls.detach()
@@ -255,6 +254,7 @@ export default class Four {
   // 添加obj到场景内
   add(obj) {
     this.scene.add(obj);
+    this.objs.push(obj)
   }
   // 添加2d标签
   // obj: 需要添加至的obj dom：dom元素 position：相对定位

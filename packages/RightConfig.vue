@@ -36,8 +36,8 @@ export default {
                 this.curObj.scale[axis] = Number(e.target.value) / this.originSize[axis]
         },
         rotateInput(e, axis) {
-            if (e.target.value)
-                this.curObj.rotation[axis] = e.target.value * Math.PI / 180
+            if (e.target.value !== '')
+                this.curObj.rotation[axis] = Number(e.target.value) * Math.PI / 180
         }
     }
 }
