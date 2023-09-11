@@ -54,13 +54,17 @@ export default class Four {
       0.1,
       1000
     );
-    this.camera.position.set(50, 50, 50);
+    this.camera.position.set(30, 30, 30);
     // this.camera.lookAt(new THREE.Vector3(0, 0, 0));
     this.camera.up.set(0, 0, 1)
 
     let ambient = new THREE.AmbientLight(0x444444, 3); // 添加光源  颜色和光照强度
     let axisHelper = new THREE.AxesHelper(600); // 添加辅助坐标系 参数位辅助坐标系的长度
     this.scene.add(ambient, axisHelper); // 向场景中添加光源 和 辅助坐标系
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
+    directionalLight.position.set(0, 0, 30); // 光源的方向
+    this.scene.add(directionalLight);
 
     // 创建渲染器
     this.renderer = new THREE.WebGLRenderer({ antialias: true }); // 加入去除锯齿功能
@@ -198,7 +202,6 @@ export default class Four {
         }
       }
       let intersects = raycaster.intersectObjects(checkObjs, false)
-      console.log(intersects);
       batchSetChildrenVisible(object, false, true)
       object = null
       for (const val of intersects) {

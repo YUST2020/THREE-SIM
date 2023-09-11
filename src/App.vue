@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <div ref="container" style="width: 100vw;height: 100vh;"></div>
+    <button style="position: absolute;bottom: 30px;right: 80px;" @click="loadPlane">上料</button>
     <button style="position: absolute;bottom: 30px;right: 30px;" @click="save">保存</button>
   </div>
 </template>
@@ -8,13 +9,16 @@
 <script>
 // import { Four,Obj,ModelObj } from '../dist/laser-scene.umd.min.js'
 // import '../dist/laser-scene.css'
-import Four from '../packages/Four'
+import { Four, Utils } from '../packages'
 // import Obj from '../packages/Obj'
-import ModelObj from '../packages/ModelObj'
-// import * as THREE from 'three'
+// import ModelObj from '../packages/ModelObj'
+import * as THREE from 'three'
 import VueLabel from './VueLabel.vue'
 import Vue from 'vue'
-import pos from './positionData'
+
+import { MachineBed, LoadMachine, UnLoadMachine } from './model'
+import { LOAD_NAME, UNLOAD_NAME, BED_NAME, LOAD_MOVE_NAME, UNLOAD_MOVE_NAME } from './model'
+import { ModelObj } from '../packages'
 // class CustomObj1 extends Obj {
 //   constructor() {
 //     super(...arguments);
@@ -40,20 +44,36 @@ export default {
     return {
       four: {},
       curObj: null,
-      originSize: {}
+      originSize: {},
+      plane: null
     }
   },
   mounted() {
-    console.log(pos);
     this.four = new Four(this.$refs.container)
-    for (let i of pos) {
-      const obj = new ModelObj(i, null, i.path)
-      this.four.add(obj)
-      const element = document.createElement('div');
-      element.style.backgroundColor = 'gray';
-      element.innerText = i.path;
-      this.four.add2DLabel(obj,element)
-    }
+    const bed = new MachineBed({ z: 6 })
+    this.four.add(bed)
+    const loadM = new LoadMachine({ x: 12, y: -24, z: 6 })
+    this.four.add(loadM)
+    const unloadM = new UnLoadMachine({ x: 12, y: 24, z: 6 })
+    this.four.add(unloadM)
+
+    this.plane = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 1), new THREE.MeshPhongMaterial({
+      color: 0x808080, // 基础颜色
+      specular: 0xffffff, // 镜面高光颜色
+      shininess: 100, // 镜面高光强度
+    }))
+    this.plane.position.set(-20, -30, 0)
+    this.four.add(this.plane)
+    // const shelf = new ModelObj({z: 15}, null, 'model/wareHouse/shelf.obj')
+    // this.four.add(shelf)
+    // for (let i of pos) {
+    //   const obj = new ModelObj(i, null, i.path)
+    //   this.four.add(obj)
+    //   const element = document.createElement('div');
+    //   element.style.backgroundColor = 'gray';
+    //   element.innerText = i.path;
+    //   this.four.add2DLabel(obj,element)
+    // }
     // // #region 车
     // const endCar = new ModelObj({ x: 10, y: 0, z: 0 }, null, 'model/endCar.obj')
     // this.four.add(endCar)
@@ -83,8 +103,8 @@ export default {
     // this.four.add(right)
     // const downZ = new ModelObj({ x: 0, y: 0, z: 30 }, null, 'model/down/downZ.obj')
     // this.four.add(downZ)
-    // const downFixed = new ModelObj({ x: 0, y: 0, z: 40 }, null, 'model/down/fixed.obj')
-    // this.four.add(downFixed)
+    // const downfix = new ModelObj({ x: 0, y: 0, z: 40 }, null, 'model/down/fix.obj')
+    // this.four.add(downfix)
     // // #endregion
     // model.moveTo({x: 20,y:20,z: 20})
 
@@ -97,6 +117,31 @@ export default {
     })
   },
   methods: {
+    async loadPlane() {
+      const LoadObj = this.four.objs.find(val => val.modelType === LOAD_NAME)
+      console.log('data', this.plane, LoadObj);
+
+      // 将需要移动的装置从里面拆出来
+      const moveObj = LoadObj.children.find(val => val.modelType === LOAD_MOVE_NAME)
+      if (moveObj) {
+        let worldPosition = new THREE.Vector3();
+        moveObj.getWorldPosition(worldPosition);
+        LoadObj.remove(moveObj);
+        moveObj.position.copy(worldPosition)
+        console.log(moveObj);
+        this.four.scene.add(moveObj)
+      }
+      let originSize = Utils.getOriginSize(moveObj)
+      await Utils.moveTo(moveObj, { ...this.plane.position, z: this.plane.position.z + originSize.z * moveObj.scale.z / 2 + 1 })
+      moveObj.attach(this.plane)
+
+      const BedObj = this.four.objs.find(val => val.modelType === BED_NAME)
+      await Utils.moveTo(moveObj, {
+        ...BedObj.position,
+        z: BedObj.position.z + originSize.z * moveObj.scale.z / 2 + 1
+      },
+        { order: ['z', 'y', 'x'] })
+    },
     save() {
       console.log(this.four.objs);
       const data = this.four.objs.map(val => {

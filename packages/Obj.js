@@ -23,7 +23,7 @@ export default class Obj extends Object3D {
     this.position.set(x, y, z);
     this.scale.set(scaleX, scaleY, scaleZ)
     this.rotation.set(rotateX, rotateY, rotateZ)
-    // this.initBoundingBox();
+    this.initBoundingBox();
 
     // 标识要在initBoundingBox后面，否则会触发到copy
     // 标识为可拖拽最外围
