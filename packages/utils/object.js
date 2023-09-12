@@ -55,25 +55,39 @@ export const getModel = (path, scale = true) => {
             () => { reject() }
     })
 }
-export const moveTo = async (obj, toPosition = {}, options = {}) => {
+// 直线移动到指定坐标
+const objLineMove = (obj, pos) => {
+    pos = Object.assign({ x: obj.position.x, y: obj.position.y, z: obj.position.z }, pos)
+    const moveLen = Math.abs(pos.x - obj.position.x) + Math.abs(pos.y - obj.position.y) + Math.abs(pos.z - obj.position.z)
+    return new Promise((resolve) => {
+        new TWEEN.Tween(obj.position)
+            .to({ ...pos }, moveLen * 100)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .start()
+            .onComplete(() => { resolve() })
+    })
+}
+// 世界坐标系根据指定轴顺序进行移动
+export const moveObj = async (obj, toPosition = {}, options = {}) => {
     options = Object.assign({
         order: ['x', 'y', 'z']
     }, options)
-    const moveAxis = (pos) => {
-        pos = Object.assign({ x: obj.position.x, y: obj.position.y, z: obj.position.z }, pos)
-        const moveLen = Math.abs(pos.x - obj.position.x) + Math.abs(pos.y - obj.position.y) + Math.abs(pos.z - obj.position.z)
-        return new Promise((resolve) => {
-            new TWEEN.Tween(obj.position)
-                .to({ ...pos }, moveLen * 100)
-                .easing(TWEEN.Easing.Quadratic.InOut)
-                .start()
-                .onComplete(() => { resolve() })
-        })
-    }
+
     for (let axis of options.order) {
         if (toPosition[axis] !== undefined) {
-            await moveAxis({ [axis]: toPosition[axis] })
+            await objLineMove(obj, { [axis]: toPosition[axis] })
         }
     }
 }
-export default { getBoundingSize, getOriginSize, getModel, moveTo }
+// 根据自身来进行相对运动
+export const moveObjBySelf = async (obj, selfPosition = {}, options = {}) => {
+    options = Object.assign({
+        order: ['x', 'y', 'z']
+    }, options)
+    for (let axis of options.order) {
+        if (selfPosition[axis] !== undefined) {
+            await objLineMove(obj, { [axis]: obj.position[axis] + selfPosition[axis] })
+        }
+    }
+}
+export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf }

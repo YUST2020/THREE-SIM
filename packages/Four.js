@@ -65,6 +65,12 @@ export default class Four {
     const directionalLight = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
     directionalLight.position.set(0, 0, 30); // 光源的方向
     this.scene.add(directionalLight);
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
+    directionalLight2.position.set(0, 30, 0); // 光源的方向
+    this.scene.add(directionalLight2);
+    const directionalLight3 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
+    directionalLight3.position.set(30, 0, 0); // 光源的方向
+    this.scene.add(directionalLight3);
 
     // 创建渲染器
     this.renderer = new THREE.WebGLRenderer({ antialias: true }); // 加入去除锯齿功能
@@ -258,6 +264,14 @@ export default class Four {
   add(obj) {
     this.scene.add(obj);
     this.objs.push(obj)
+  }
+  // attach 进入场景，用于解绑
+  attach(obj) {
+    this.scene.attach(obj)
+  }
+  // 根据name获取场景中的obj
+  getObjectByName(str) {
+    return this.objs.find(val => val.name === str)
   }
   // 添加2d标签
   // obj: 需要添加至的obj dom：dom元素 position：相对定位

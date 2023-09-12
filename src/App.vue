@@ -1,7 +1,8 @@
 <template>
   <div id="app">
     <div ref="container" style="width: 100vw;height: 100vh;"></div>
-    <button style="position: absolute;bottom: 30px;right: 80px;" @click="loadPlane">上料</button>
+    <button style="position: absolute;bottom: 30px;right: 130px;" @click="loadPlane">上料</button>
+    <button style="position: absolute;bottom: 30px;right: 80px;" @click="unLoadPlane">下料</button>
     <button style="position: absolute;bottom: 30px;right: 30px;" @click="save">保存</button>
   </div>
 </template>
@@ -17,7 +18,10 @@ import VueLabel from './VueLabel.vue'
 import Vue from 'vue'
 
 import { MachineBed, LoadMachine, UnLoadMachine } from './model'
-import { LOAD_NAME, UNLOAD_NAME, BED_NAME, LOAD_MOVE_NAME, UNLOAD_MOVE_NAME } from './model'
+import {
+  LOAD_NAME, UNLOAD_NAME, BED_NAME, LOAD_MOVE_NAME, UNLOAD_MOVE_NAME, LOAD_MOVE_HAND_NAME,
+  UNLOAD_MOVE_HAND_NAME, UNLOAD_MOVE_HAND_LEFT, UNLOAD_MOVE_HAND_RIGHT
+} from './model'
 import { ModelObj } from '../packages'
 // class CustomObj1 extends Obj {
 //   constructor() {
@@ -45,7 +49,8 @@ export default {
       four: {},
       curObj: null,
       originSize: {},
-      plane: null
+      plane: null,
+
     }
   },
   mounted() {
@@ -118,29 +123,78 @@ export default {
   },
   methods: {
     async loadPlane() {
-      const LoadObj = this.four.objs.find(val => val.modelType === LOAD_NAME)
+      const LoadObj = this.four.getObjectByName(LOAD_NAME)
       console.log('data', this.plane, LoadObj);
 
       // 将需要移动的装置从里面拆出来
-      const moveObj = LoadObj.children.find(val => val.modelType === LOAD_MOVE_NAME)
+      const moveObj = LoadObj.getObjectByName(LOAD_MOVE_NAME)
       if (moveObj) {
-        let worldPosition = new THREE.Vector3();
-        moveObj.getWorldPosition(worldPosition);
-        LoadObj.remove(moveObj);
-        moveObj.position.copy(worldPosition)
-        console.log(moveObj);
-        this.four.scene.add(moveObj)
+        this.four.attach(moveObj)
       }
-      let originSize = Utils.getOriginSize(moveObj)
-      await Utils.moveTo(moveObj, { ...this.plane.position, z: this.plane.position.z + originSize.z * moveObj.scale.z / 2 + 1 })
-      moveObj.attach(this.plane)
+      const moveObjPos = new THREE.Vector3()
+      moveObjPos.copy(moveObj.position)
+      const handObj = moveObj.getObjectByName(LOAD_MOVE_HAND_NAME)
+      let originSize = Utils.getBoundingSize(moveObj)
+      // 上料装置到达目标位置
+      await Utils.moveObj(moveObj, {
+        x: this.plane.position.x,
+        y: this.plane.position.y
+      })
+      // 下料抓手下降到板材位置
+      let downLen = moveObj.position.z - this.plane.position.z - originSize.z / 2 - 1
+      await Utils.moveObjBySelf(handObj, { z: -downLen })
+      // 抓住板材后上升
+      handObj.attach(this.plane)
+      await Utils.moveObjBySelf(handObj, { z: downLen })
+      // 移动到机床位置
+      const BedObj = this.four.getObjectByName(BED_NAME)
+      await Utils.moveObj(moveObj, {
+        x: BedObj.position.x,
+        y: BedObj.position.y
+      }, { order: ['x', 'y'] })
+      downLen = moveObj.position.z - BedObj.position.z - originSize.z / 2 - 1
+      // 放下板材，回归初始位置
+      await Utils.moveObjBySelf(handObj, { z: -downLen })
+      this.four.attach(this.plane)
+      await Utils.moveObjBySelf(handObj, { z: downLen })
+      await Utils.moveObj(moveObj, moveObjPos, { order: ['z', 'y', 'x'] })
+    },
+    async unLoadPlane() {
+      const LoadObj = this.four.getObjectByName(LOAD_NAME)
+      console.log('data', this.plane, LoadObj);
 
-      const BedObj = this.four.objs.find(val => val.modelType === BED_NAME)
-      await Utils.moveTo(moveObj, {
-        ...BedObj.position,
-        z: BedObj.position.z + originSize.z * moveObj.scale.z / 2 + 1
-      },
-        { order: ['z', 'y', 'x'] })
+      // 将需要移动的装置从里面拆出来
+      const moveObj = LoadObj.getObjectByName(LOAD_MOVE_NAME)
+      if (moveObj) {
+        this.four.attach(moveObj)
+      }
+      const moveObjPos = new THREE.Vector3()
+      moveObjPos.copy(moveObj.position)
+      const handObj = moveObj.getObjectByName(LOAD_MOVE_HAND_NAME)
+      let originSize = Utils.getBoundingSize(moveObj)
+      // 上料装置到达目标位置
+      await Utils.moveObj(moveObj, {
+        x: this.plane.position.x,
+        y: this.plane.position.y
+      })
+      // 下料抓手下降到板材位置
+      let downLen = moveObj.position.z - this.plane.position.z - originSize.z / 2 - 1
+      await Utils.moveObjBySelf(handObj, { z: -downLen })
+      // 抓住板材后上升
+      handObj.attach(this.plane)
+      await Utils.moveObjBySelf(handObj, { z: downLen })
+      // 移动到机床位置
+      const BedObj = this.four.getObjectByName(BED_NAME)
+      await Utils.moveObj(moveObj, {
+        x: BedObj.position.x,
+        y: BedObj.position.y
+      }, { order: ['x', 'y'] })
+      downLen = moveObj.position.z - BedObj.position.z - originSize.z / 2 - 1
+      // 放下板材，回归初始位置
+      await Utils.moveObjBySelf(handObj, { z: -downLen })
+      this.four.attach(this.plane)
+      await Utils.moveObjBySelf(handObj, { z: downLen })
+      await Utils.moveObj(moveObj, moveObjPos, { order: ['z', 'y', 'x'] })
     },
     save() {
       console.log(this.four.objs);
