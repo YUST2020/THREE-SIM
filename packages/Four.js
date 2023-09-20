@@ -1,20 +1,30 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { TransformControls } from "./TransformControls";
+import { TransformControls } from "./utils/TransformControls";
 import {
   CSS2DRenderer,
   CSS2DObject,
 } from "three/addons/renderers/CSS2DRenderer.js";
 import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
 import Vue from 'vue'
-import TopOptions from './TopOptions'
-import LeftOptions from './LeftOptions.vue'
+import TopOptions from './components/TopOptions'
+import LeftOptions from './components/LeftOptions.vue'
 import TWEEN from "@tweenjs/tween.js"
 import Stats from 'three/addons/libs/stats.module.js'
-import RightConfig from './RightConfig.vue'
+// import RightConfig from './components/RightConfig.vue'
 import { getBoundingSize, getOriginSize } from './utils/object'
+import ResourceTracker from "./utils/TrackResource";
 
-
+// 设置边框，选中标签显示状态
+const batchSetChildrenVisible = (obj, show, hover = false) => {
+  if (!obj) return
+  for (let child of obj.children) {
+    // 设置选中时外边框的显隐
+    if (hover ? child.isHoverBox : child.isSelectBox) {
+      child.visible = show;
+    }
+  }
+};
 export default class Four {
   constructor(dom) {
     this.dom = dom; // 外围dom元素
@@ -28,12 +38,22 @@ export default class Four {
     this.curObj = null; // 当前选中object
     this.keyboard = {}; // 记录当前已按下的按钮
     this.configInstance = null; // 右侧菜单的实例对象
-    this.objs = [] // 当前场景种的全部对象
+    this.objs = new Proxy([], {
+      set: (target, property, value) => {
+        target[property] = value;
+        this.leftVueInstance?.setObjs(target)
+        return true;
+      }
+    }) // 当前场景种的全部对象
     this.state = {
       mode: 'translate'
     }
     this.events = {}
     this.stats = new Stats();
+    this.topVueInstance = null // 顶部状态栏的vue实例
+    this.leftVueInstance = null // 左侧状态栏的vue实例
+    this.resMgr = new ResourceTracker(); // 记录模型的信息，用于销毁时清理内存
+    this.track = this.resMgr.track.bind(this.resMgr); // 追踪模型的方法
 
     document.body.appendChild(this.stats.domElement);
     this.stats.setMode(0)
@@ -45,7 +65,7 @@ export default class Four {
   init() {
     // 创建场景
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x2E3138); // 添加背景颜色
+    this.scene.background = new THREE.Color(0x111216); // 添加背景颜色
 
     // 创建相机
     this.camera = new THREE.PerspectiveCamera(
@@ -63,14 +83,23 @@ export default class Four {
     this.scene.add(ambient, axisHelper); // 向场景中添加光源 和 辅助坐标系
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
-    directionalLight.position.set(0, 0, 30); // 光源的方向
+    directionalLight.position.set(0, 0, 60); // 光源的方向
     this.scene.add(directionalLight);
     const directionalLight2 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
-    directionalLight2.position.set(0, 30, 0); // 光源的方向
+    directionalLight2.position.set(0, 60, 0); // 光源的方向
     this.scene.add(directionalLight2);
     const directionalLight3 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
-    directionalLight3.position.set(30, 0, 0); // 光源的方向
+    directionalLight3.position.set(60, 0, 0); // 光源的方向
     this.scene.add(directionalLight3);
+    const directionalLight4 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
+    directionalLight4.position.set(-60, 0, 0); // 光源的方向
+    this.scene.add(directionalLight4);
+    const directionalLight5 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
+    directionalLight5.position.set(0, -60, 0); // 光源的方向
+    this.scene.add(directionalLight5);
+    const directionalLight6 = new THREE.DirectionalLight(0xffffff, 5); // 光源颜色和强度
+    directionalLight6.position.set(0, 0, -60); // 光源的方向
+    this.scene.add(directionalLight6);
 
     // 创建渲染器
     this.renderer = new THREE.WebGLRenderer({ antialias: true }); // 加入去除锯齿功能
@@ -132,10 +161,10 @@ export default class Four {
       internalFormat: 'RGBA32I',
     });
 
-    this.initOptions()
+    this.initVueInstance()
   }
   // 挂载vue组件
-  initOptions() {
+  initVueInstance() {
     const mountVueToDom = (comp, options = {}) => {
       const container = document.createElement('div')
       this.dom.appendChild(container)
@@ -144,19 +173,35 @@ export default class Four {
       instance.$mount(container)
       return instance
     }
-    mountVueToDom(TopOptions, {
+    this.topVueInstance = mountVueToDom(TopOptions, {
       propsData: {
         state: this.state,
         emitMethods: {
           setMode: (mode) => {
             this.state.mode = mode
             this.transformControls.setMode(mode)
+          },
+          del: () => {
+            const index = this.objs.findIndex(val => val.id === this.curObj.id)
+            if (index !== -1) {
+              this.transformControls.detach()
+              this.objs.splice(index, 1)
+              this.scene.remove(this.curObj)
+              this.curObj = null
+            }
           }
         }
       }
     })
-    mountVueToDom(LeftOptions)
-    this.configInstance = mountVueToDom(RightConfig)
+    this.leftVueInstance = mountVueToDom(LeftOptions, {
+      propsData: {
+        emitMethods: {
+          add: (obj) => { this.add(obj) },
+          setSelected: (obj) => { this.setSelected(obj) }
+        }
+      }
+    })
+    // this.configInstance = mountVueToDom(RightConfig)
   }
   initEvent() {
     const raycaster = new THREE.Raycaster();
@@ -173,16 +218,7 @@ export default class Four {
     let moveTimer = null
     // 标识当前鼠标位置对应的可交互物体
     let object = null
-    // 设置边框，选中标签显示状态
-    const batchSetChildrenVisible = (obj, show, hover = false) => {
-      if (!obj) return
-      for (let child of obj.children) {
-        // 设置选中时外边框的显隐
-        if (hover ? child.isHoverBox : child.isSelectBox) {
-          child.visible = show;
-        }
-      }
-    };
+
     // 鼠标移动事件处理函数
     const onDocumentMouseMove = (event) => {
       if (moveTimer) {
@@ -231,24 +267,11 @@ export default class Four {
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
     const onDocumentClick = () => {
       if (!timer) return
-      if (object) {
-        // 选取第一个可拖拽物体并对其执行选中
-        console.log("object:", object);
-        // 当变更选中目标时隐藏之前的线框
-        if (this.curObj && object && this.curObj !== object) {
-          batchSetChildrenVisible(this.curObj, false);
-        }
-        batchSetChildrenVisible(object, true);
-        this.curObj = object;
-        this.transformControls.attach(this.curObj);
-        console.log(this.curObj);
-      } else {
-        this.transformControls.detach()
-        batchSetChildrenVisible(this.curObj, false);
-        this.curObj = null
-      }
+      // 选取第一个可拖拽物体并对其执行选中
+      console.log("object:", object);
+      this.setSelected(object)
       this.dispatch('selectChange', this.curObj)
-      this.configInstance.init(this.curObj)
+      // this.configInstance.init(this.curObj)
     };
     console.log(this.dom);
     this.dom.addEventListener("click", onDocumentClick, false);
@@ -260,18 +283,13 @@ export default class Four {
       this.keyboard[event.code] = false;
     })
   }
-  // 添加obj到场景内
-  add(obj) {
-    this.scene.add(obj);
-    this.objs.push(obj)
-  }
-  // attach 进入场景，用于解绑
-  attach(obj) {
-    this.scene.attach(obj)
-  }
-  // 根据name获取场景中的obj
-  getObjectByName(str) {
-    return this.objs.find(val => val.name === str)
+
+
+
+  // #region 暴露给外部调用的方法
+  // 初始化左侧可添加的列表 title: 标题 subTitle: 副标题 class 继承obj的类
+  setAddableList(list) {
+    this.leftVueInstance.setAddableList(list)
   }
   // 添加2d标签
   // obj: 需要添加至的obj dom：dom元素 position：相对定位
@@ -281,6 +299,7 @@ export default class Four {
     labelObject.position.set(x, y, z);
     obj.add(labelObject);
   }
+  // 挂载事件 该处事件由内部dispatch触发
   addEvent(name, func) {
     if (this.events[name]) {
       this.events[name].push(func)
@@ -288,6 +307,61 @@ export default class Four {
       this.events[name] = [func]
     }
   }
+  // 根据name获取场景中的obj
+  getObjectByName(str) {
+    return this.objs.find(val => val.name === str)
+  }
+  // 添加obj到场景内
+  add(obj) {
+    this.track(obj)
+    this.scene.add(obj)
+    this.objs.push(obj)
+  }
+  // attach 进入场景，用于解绑
+  attach(obj) {
+    this.scene.attach(obj)
+  }
+  // 设置当前选中的对象
+  setSelected(object) {
+    // 先把之前的框给去掉
+    if (this.curObj) {
+      batchSetChildrenVisible(this.curObj, false);
+    }
+    if (object) {
+      batchSetChildrenVisible(object, true);
+      this.curObj = object;
+      this.transformControls.attach(this.curObj);
+    } else {
+      this.transformControls.detach()
+      batchSetChildrenVisible(this.curObj, false);
+      this.curObj = null
+    }
+  }
+  // 销毁当前实例
+  destroy() {
+    try {
+      this.scene.clear();
+      this.resMgr && this.resMgr.dispose()
+      this.renderer.dispose();
+      this.renderer.forceContextLoss();
+      this.renderer.content = null;
+      cancelAnimationFrame(this.animationID) // 去除animationFrame
+      let gl = this.renderer.domElement.getContext("webgl");
+      gl && gl.getExtension("WEBGL_lose_context").loseContext();
+    }catch (e) {
+      console.log(e)
+    }
+  }
+  // 获取包围盒的大小
+  static getBoundingSize(obj) {
+    return getBoundingSize(obj);
+  }
+  // 获取没被缩放前的包围盒的大小
+  static getOriginSize(obj) {
+    return getOriginSize(obj)
+  }
+  // #endregion
+  // 触发events中事件
   dispatch(name) {
     if (Array.isArray(this.events[name])) {
       for (let func of this.events[name]) {
@@ -296,7 +370,7 @@ export default class Four {
     }
   }
   animate() {
-    requestAnimationFrame(() => this.animate());
+    this.animationID = requestAnimationFrame(() => this.animate());
     const initZ = this.camera.position.z
     const direction = new THREE.Vector3(); // 当前朝向的向量
     this.camera.getWorldDirection(direction);
@@ -318,13 +392,5 @@ export default class Four {
     this.css3dRenderer.render(this.scene, this.camera);
     this.stats.update();
     TWEEN.update();
-  }
-  // 获取包围盒的大小
-  static getBoundingSize(obj) {
-    return getBoundingSize(obj);
-  }
-  // 获取没被缩放前的包围盒的大小
-  static getOriginSize(obj) {
-    return getOriginSize(obj)
   }
 }

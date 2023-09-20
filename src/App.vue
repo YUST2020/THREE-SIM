@@ -55,6 +55,11 @@ export default {
   },
   mounted() {
     this.four = new Four(this.$refs.container)
+    this.four.setAddableList([
+      { title: '机床', subTitle: '液压高低台', class: MachineBed },
+      { title: '上料机器', subTitle: '上料机器', class: LoadMachine },
+      { title: '下料机器', subTitle: '下料机器', class: UnLoadMachine }
+    ])
     const bed = new MachineBed({ z: 6 })
     this.four.add(bed)
     const loadM = new LoadMachine({ x: 12, y: -24, z: 6 })
@@ -68,7 +73,7 @@ export default {
       shininess: 100, // 镜面高光强度
     }))
     this.plane.position.set(-20, -30, 0)
-    this.four.add(this.plane)
+    this.four.scene.add(this.plane)
     // const shelf = new ModelObj({z: 15}, null, 'model/wareHouse/shelf.obj')
     // this.four.add(shelf)
     // for (let i of pos) {
@@ -120,6 +125,9 @@ export default {
       new vueComp().$mount(dom)
       this.four.add2DLabel(obj, dom)
     })
+  },
+  beforeDestroy() {
+    this.four.destroy()
   },
   methods: {
     async loadPlane() {

@@ -44,6 +44,11 @@ export const getModel = (path, scale = true) => {
                 const maxLen = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z)
                 mergedMesh.position.set(0, 0, 0)
                 mergedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
+                // mergedMesh.material = new THREE.MeshStandardMaterial({
+                //     color: 0x4D515D,
+                //     metalness: 0.1,
+                //     roughness: 0.8,
+                //   })
                 // 根据3边的最长边缩放到10单位
                 if (scale && maxLen > 10) {
                     const scale = 0.1 // 10 / maxLen
