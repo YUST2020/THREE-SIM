@@ -17,48 +17,68 @@ export const getOriginSize = (obj) => {
     size.z /= obj.scale.z
     return size
 }
+// 将add了多个物体的Object居中
+export const centerObject3D = (object) => {
+    // 获取包围盒
+    const box = new THREE.Box3().setFromObject(object);
+    // 获取中心点坐标
+    const center = box.getCenter(new THREE.Vector3());
+    // 获取差
+    const diff = center.sub(object.position)
+    // 遍历子对象
+    object.traverse((child) => {
+      // 减去中心点坐标
+      child.position.sub(diff);
+    });
+  }
+const loadedMeshCache = {}
+const loader = new OBJLoader()
 // 获取模型的Object scale: 是否缩放至10
 export const getModel = (path, scale = true) => {
     return new Promise((resolve, reject) => {
-        const loader = new OBJLoader()
-        loader.load(path,
-            (loadedMesh) => {
-                console.log('loadedMesh', loadedMesh);
-                loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
-                // 递归遍历 Group 内的所有子对象，提取缓冲几何体
-                function extractBufferGeometries(object, bufferGeometries) {
-                    if (object instanceof THREE.Mesh && object.geometry instanceof THREE.BufferGeometry) {
-                        delete object.geometry.attributes.uv
-                        bufferGeometries.push(object.geometry);
+        const cacheMesh = loadedMeshCache[path]
+        // 有缓存过的就不重新加载
+        if (cacheMesh) {
+            resolve(cacheMesh.clone())
+        } else {
+            loader.load(path,
+                (loadedMesh) => {
+                    console.log('loadedMesh', loadedMesh);
+                    loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
+                    // 递归遍历 Group 内的所有子对象，提取缓冲几何体
+                    function extractBufferGeometries(object, bufferGeometries) {
+                        if (object instanceof THREE.Mesh && object.geometry instanceof THREE.BufferGeometry) {
+                            delete object.geometry.attributes.uv
+                            bufferGeometries.push(object.geometry);
+                        }
+                        for (const child of object.children) {
+                            extractBufferGeometries(child, bufferGeometries);
+                        }
                     }
-                    for (const child of object.children) {
-                        extractBufferGeometries(child, bufferGeometries);
+                    let bufferGeometries = [];
+                    extractBufferGeometries(loadedMesh, bufferGeometries);
+                    const mergedGeometry = BufferGeometryUtils.mergeGeometries(bufferGeometries);
+                    mergedGeometry.center()
+                    const mergedMesh = new THREE.Mesh(mergedGeometry)
+                    const boundingBoxSize = getBoundingSize(mergedMesh)
+                    const maxLen = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z)
+                    mergedMesh.position.set(0, 0, 0)
+                    mergedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
+                    // mergedMesh.material = new THREE.MeshStandardMaterial({
+                    //     color: 0x4D515D,
+                    //     metalness: 0.1,
+                    //     roughness: 0.8,
+                    //   })
+                    // 根据3边的最长边缩放到10单位
+                    if (scale && maxLen > 10) {
+                        const scale = 0.1 // 10 / maxLen
+                        mergedMesh.scale.set(scale, scale, scale);
                     }
-                }
-                let bufferGeometries = [];
-                extractBufferGeometries(loadedMesh, bufferGeometries);
-                const mergedGeometry = BufferGeometryUtils.mergeGeometries(bufferGeometries);
-                mergedGeometry.center()
-                const mergedMesh = new THREE.Mesh(mergedGeometry)
-                const boundingBoxSize = getBoundingSize(mergedMesh)
-                const maxLen = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z)
-                mergedMesh.position.set(0, 0, 0)
-                mergedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
-                // mergedMesh.material = new THREE.MeshStandardMaterial({
-                //     color: 0x4D515D,
-                //     metalness: 0.1,
-                //     roughness: 0.8,
-                //   })
-                // 根据3边的最长边缩放到10单位
-                if (scale && maxLen > 10) {
-                    const scale = 0.1 // 10 / maxLen
-                    mergedMesh.scale.set(scale, scale, scale);
-                }
-                resolve(mergedMesh)
-            }),
-            () => { },
-            () => { reject() }
-    })
+                    loadedMeshCache[path] = mergedMesh.clone()
+                    resolve(mergedMesh)
+                })
+        }
+    })    
 }
 // 直线移动到指定坐标
 const objLineMove = (obj, pos) => {
@@ -95,4 +115,4 @@ export const moveObjBySelf = async (obj, selfPosition = {}, options = {}) => {
         }
     }
 }
-export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf }
+export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf, centerObject3D }

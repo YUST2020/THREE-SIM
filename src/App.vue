@@ -54,7 +54,7 @@ export default {
     }
   },
   mounted() {
-    this.four = new Four(this.$refs.container)
+    this.four = new Four(this.$refs.container, { isEdit: true })
     this.four.setAddableList([
       { title: '机床', subTitle: '液压高低台', class: MachineBed },
       { title: '上料机器', subTitle: '上料机器', class: LoadMachine },

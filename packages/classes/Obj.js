@@ -5,17 +5,17 @@ export default class Obj extends Object3D {
   // position 位置信息 options：{}
   constructor(position, options = {}) {
     super()
-    this.options = { 
+    this.options = {
       id: Math.random(),
       speed: 1,
-      ...options 
+      ...options
     };
     this.isMoving = false
     // 设置形状材质
-    const posInfo = { 
-      x: 0, y: 0,  z: 0, 
+    const posInfo = {
+      x: 0, y: 0, z: 0,
       scaleX: 1, scaleY: 1, scaleZ: 1,
-      rotateX: 0,rotateY: 0, rotateZ: 0,
+      rotateX: 0, rotateY: 0, rotateZ: 0,
       ...position
     }
     const { x, y, z, scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ } = posInfo
@@ -51,16 +51,22 @@ export default class Obj extends Object3D {
     const cloneObj = new Object3D()
     cloneObj.copy(this);
     cloneObj.position.set(0, 0, 0);
-    cloneObj.scale.set(1,1,1)
-    cloneObj.rotation.set(0,0,0)
+    cloneObj.scale.set(1, 1, 1)
+    cloneObj.rotation.set(0, 0, 0)
     // 包围盒
     const boundingBox = new THREE.Box3().setFromObject(cloneObj);
-    // hover时触发的
+    // 接收hover事件的包围盒物体
+    const size = boundingBox.getSize(new THREE.Vector3())
+    const boundingBoxMesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+    boundingBoxMesh.isBoundingBox = true
+    this.add(boundingBoxMesh)
+    // hover时触发的线框
     let hoverBoxHelper = new THREE.Box3Helper(boundingBox, 0x00eeff);
     hoverBoxHelper.visible = false;
     hoverBoxHelper.isHoverBox = true;
     this.add(hoverBoxHelper);
-    // 选中时触发的
+    // 选中时触发的线框
     let selectBoxHelper = new THREE.Box3Helper(boundingBox, 0x1890ff);
     selectBoxHelper.visible = false;
     selectBoxHelper.isSelectBox = true;
@@ -170,25 +176,25 @@ export default class Obj extends Object3D {
     // this.arrowZ = arrowZ;
   }
   // 以绝对坐标系为基准移动
-  async moveTo (toPosition = {}) {
-    const {x,y,z} = toPosition
+  async moveTo(toPosition = {}) {
+    const { x, y, z } = toPosition
     const moveAxis = (pos) => {
       return new Promise((resolve) => {
         new TWEEN.Tween(this.position)
-        .to({...pos}, 4000)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
-        .onComplete(() => { resolve() })
+          .to({ ...pos }, 4000)
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .start()
+          .onComplete(() => { resolve() })
       })
     }
     if (x || x === 0) {
-      await moveAxis({x})
+      await moveAxis({ x })
     }
     if (y || y === 0) {
-      await moveAxis({y})
+      await moveAxis({ y })
     }
     if (z || z === 0) {
-      await moveAxis({z})
+      await moveAxis({ z })
     }
   }
 }

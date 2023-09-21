@@ -12,7 +12,7 @@ import LeftOptions from './components/LeftOptions.vue'
 import TWEEN from "@tweenjs/tween.js"
 import Stats from 'three/addons/libs/stats.module.js'
 // import RightConfig from './components/RightConfig.vue'
-import { getBoundingSize, getOriginSize } from './utils/object'
+import { getBoundingSize, getOriginSize, centerObject3D, getModel, moveObj, moveObjBySelf } from './utils/object'
 import ResourceTracker from "./utils/TrackResource";
 
 // 设置边框，选中标签显示状态
@@ -26,7 +26,7 @@ const batchSetChildrenVisible = (obj, show, hover = false) => {
   }
 };
 export default class Four {
-  constructor(dom) {
+  constructor(dom, options = {}) {
     this.dom = dom; // 外围dom元素
     this.scene = null;
     this.camera = null;
@@ -38,6 +38,7 @@ export default class Four {
     this.curObj = null; // 当前选中object
     this.keyboard = {}; // 记录当前已按下的按钮
     this.configInstance = null; // 右侧菜单的实例对象
+    this.isEdit = options.isEdit || false; // 是否是编辑状态
     this.objs = new Proxy([], {
       set: (target, property, value) => {
         target[property] = value;
@@ -49,14 +50,18 @@ export default class Four {
       mode: 'translate'
     }
     this.events = {}
-    this.stats = new Stats();
     this.topVueInstance = null // 顶部状态栏的vue实例
     this.leftVueInstance = null // 左侧状态栏的vue实例
     this.resMgr = new ResourceTracker(); // 记录模型的信息，用于销毁时清理内存
     this.track = this.resMgr.track.bind(this.resMgr); // 追踪模型的方法
 
-    document.body.appendChild(this.stats.domElement);
-    this.stats.setMode(0)
+    // 挂载左上角性能监视器
+    if (options.stats) {
+      this.stats = new Stats();
+      document.body.appendChild(this.stats.domElement);
+      this.stats.setMode(0)
+    }
+
     this.init();
     this.initEvent();
     this.animate();
@@ -173,34 +178,36 @@ export default class Four {
       instance.$mount(container)
       return instance
     }
-    this.topVueInstance = mountVueToDom(TopOptions, {
-      propsData: {
-        state: this.state,
-        emitMethods: {
-          setMode: (mode) => {
-            this.state.mode = mode
-            this.transformControls.setMode(mode)
-          },
-          del: () => {
-            const index = this.objs.findIndex(val => val.id === this.curObj.id)
-            if (index !== -1) {
-              this.transformControls.detach()
-              this.objs.splice(index, 1)
-              this.scene.remove(this.curObj)
-              this.curObj = null
+    if (this.isEdit) {
+      this.topVueInstance = mountVueToDom(TopOptions, {
+        propsData: {
+          state: this.state,
+          emitMethods: {
+            setMode: (mode) => {
+              this.state.mode = mode
+              this.transformControls.setMode(mode)
+            },
+            del: () => {
+              const index = this.objs.findIndex(val => val.id === this.curObj.id)
+              if (index !== -1) {
+                this.transformControls.detach()
+                this.objs.splice(index, 1)
+                this.scene.remove(this.curObj)
+                this.curObj = null
+              }
             }
           }
         }
-      }
-    })
-    this.leftVueInstance = mountVueToDom(LeftOptions, {
-      propsData: {
-        emitMethods: {
-          add: (obj) => { this.add(obj) },
-          setSelected: (obj) => { this.setSelected(obj) }
+      })
+      this.leftVueInstance = mountVueToDom(LeftOptions, {
+        propsData: {
+          emitMethods: {
+            add: (obj) => { this.add(obj) },
+            setSelected: (obj) => { this.setSelected(obj) }
+          }
         }
-      }
-    })
+      })
+    }
     // this.configInstance = mountVueToDom(RightConfig)
   }
   initEvent() {
@@ -238,30 +245,14 @@ export default class Four {
       const checkObjs = []
       for (let outer of this.scene.children) {
         for (let i of outer.children) {
-          if (i.type === 'Box3Helper') {
+          if (i.isBoundingBox) {
             checkObjs.push(i)
           }
         }
       }
       let intersects = raycaster.intersectObjects(checkObjs, false)
       batchSetChildrenVisible(object, false, true)
-      object = null
-      for (const val of intersects) {
-        let cur = val.object
-        if (cur.type !== 'Box3Helper') {
-          continue
-        }
-        while (cur && !object) {
-          if (cur.isOuter) {
-            object = cur
-            break
-          }
-          cur = cur.parent
-        }
-        if (object) {
-          break
-        }
-      }
+      object = intersects.length > 0 ? intersects[0].object.parent : null
       batchSetChildrenVisible(object, true, true)
     };
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
@@ -270,7 +261,6 @@ export default class Four {
       // 选取第一个可拖拽物体并对其执行选中
       console.log("object:", object);
       this.setSelected(object)
-      this.dispatch('selectChange', this.curObj)
       // this.configInstance.init(this.curObj)
     };
     console.log(this.dom);
@@ -283,9 +273,6 @@ export default class Four {
       this.keyboard[event.code] = false;
     })
   }
-
-
-
   // #region 暴露给外部调用的方法
   // 初始化左侧可添加的列表 title: 标题 subTitle: 副标题 class 继承obj的类
   setAddableList(list) {
@@ -293,7 +280,8 @@ export default class Four {
   }
   // 添加2d标签
   // obj: 需要添加至的obj dom：dom元素 position：相对定位
-  add2DLabel(obj, dom, position = { x: 0, y: 0, z: 0 }) {
+  add2DLabel(obj, dom, pos) {
+    const position = Object.assign({ x: 0, y: 0, z: 0 }, pos)
     const labelObject = new CSS2DObject(dom);
     const { x, y, z } = position
     labelObject.position.set(x, y, z);
@@ -327,12 +315,13 @@ export default class Four {
     if (this.curObj) {
       batchSetChildrenVisible(this.curObj, false);
     }
+    this.dispatch('selectChange', object, this.curObj)
     if (object) {
       batchSetChildrenVisible(object, true);
       this.curObj = object;
-      this.transformControls.attach(this.curObj);
+      this.isEdit && this.transformControls.attach(this.curObj);
     } else {
-      this.transformControls.detach()
+      this.isEdit && this.transformControls.detach()
       batchSetChildrenVisible(this.curObj, false);
       this.curObj = null
     }
@@ -348,19 +337,34 @@ export default class Four {
       cancelAnimationFrame(this.animationID) // 去除animationFrame
       let gl = this.renderer.domElement.getContext("webgl");
       gl && gl.getExtension("WEBGL_lose_context").loseContext();
-    }catch (e) {
+    } catch (e) {
       console.log(e)
     }
   }
-  // 获取包围盒的大小
-  static getBoundingSize(obj) {
-    return getBoundingSize(obj);
-  }
-  // 获取没被缩放前的包围盒的大小
-  static getOriginSize(obj) {
-    return getOriginSize(obj)
-  }
   // #endregion
+
+  // #region 静态工具方法
+
+  // 获取包围盒的大小
+  static getBoundingSize(obj) { return getBoundingSize(obj) }
+
+  // 获取没被缩放前的包围盒的大小
+  static getOriginSize(obj) { return getOriginSize(obj) }
+
+  // 将add了多个物体的Object居中
+  static centerObject3D() { return centerObject3D(...arguments) }
+
+  // 获取模型的Object path: 路径 scale: 是否缩放至10
+  static getModel() { return getModel(...arguments) }
+
+  // 世界坐标系根据指定轴顺序进行移动
+  static moveObj() { return moveObj(...arguments) }
+
+  // 根据自身来进行相对运动
+  static moveObjBySelf() { return moveObjBySelf(...arguments) }
+
+  // #endregion
+
   // 触发events中事件
   dispatch(name) {
     if (Array.isArray(this.events[name])) {
@@ -390,7 +394,7 @@ export default class Four {
     this.renderer.render(this.scene, this.camera);
     this.css2dRenderer.render(this.scene, this.camera);
     this.css3dRenderer.render(this.scene, this.camera);
-    this.stats.update();
+    this.stats?.update();
     TWEEN.update();
   }
 }
