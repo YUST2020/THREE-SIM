@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Object3D } from 'three'
 import TWEEN from "@tweenjs/tween.js"
+import { setBottomPosition } from '../utils/object'
 export default class Obj extends Object3D {
   // position 位置信息 options：{}
   constructor(position, options = {}) {
@@ -18,9 +19,14 @@ export default class Obj extends Object3D {
       rotateX: 0, rotateY: 0, rotateZ: 0,
       ...position
     }
-    const { x, y, z, scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ } = posInfo
-    // const size = this.getSize();
-    this.position.set(x, y, z);
+    this.posInfo = posInfo
+    const { x, y, z, scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ, bottom } = posInfo
+    // 设置bottom代表根据底边中心进行定位
+    if (bottom) {
+      setBottomPosition(this, { x, y, z })
+    } else {
+      this.position.set(x, y, z);
+    }
     this.scale.set(scaleX, scaleY, scaleZ)
     this.rotation.set(rotateX, rotateY, rotateZ)
     this.initBoundingBox();
@@ -38,6 +44,7 @@ export default class Obj extends Object3D {
   }
   // 初始化hover和select的包围框
   initBoundingBox() {
+    setBottomPosition(this, { x: this.posInfo.x, y: this.posInfo.y, z: this.posInfo.z })
     // 二次生成时对之前的先进行移除
     const removeList = [];
     for (let i of this.children) {
@@ -60,6 +67,9 @@ export default class Obj extends Object3D {
     const boundingBoxMesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z),
       new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
     boundingBoxMesh.isBoundingBox = true
+    if (this.options.top) {
+      boundingBoxMesh.top = true
+    }
     this.add(boundingBoxMesh)
     // hover时触发的线框
     let hoverBoxHelper = new THREE.Box3Helper(boundingBox, 0x00eeff);

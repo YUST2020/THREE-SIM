@@ -11,7 +11,7 @@
 // import { Four,Obj,ModelObj } from '../dist/laser-scene.umd.min.js'
 // import '../dist/laser-scene.css'
 import { Four, Utils } from '../packages'
-// import Obj from '../packages/Obj'
+import Obj from '../packages/classes/Obj'
 // import ModelObj from '../packages/ModelObj'
 import * as THREE from 'three'
 import VueLabel from './VueLabel.vue'
@@ -60,13 +60,28 @@ export default {
       { title: '上料机器', subTitle: '上料机器', class: LoadMachine },
       { title: '下料机器', subTitle: '下料机器', class: UnLoadMachine }
     ])
-    const bed = new MachineBed({ z: 6 })
-    this.four.add(bed)
-    const loadM = new LoadMachine({ x: 12, y: -24, z: 6 })
-    this.four.add(loadM)
-    const unloadM = new UnLoadMachine({ x: 12, y: 24, z: 6 })
-    this.four.add(unloadM)
-
+    // const bed = new MachineBed({ z: 0, bottom: true })
+    // this.four.add(bed)
+    // const loadM = new LoadMachine({ x: 12, y: -24, z: 6 })
+    // this.four.add(loadM)
+    // const unloadM = new UnLoadMachine({ x: 12, y: 24, z: 6 })
+    // this.four.add(unloadM)
+    const a = new Obj({},{top:true})
+    a.add(new THREE.Mesh(new THREE.BoxGeometry(15, 25, 60), new THREE.MeshBasicMaterial({
+      color: 0x4D515D,
+      transparent: true,
+      opacity: 0.5
+    })))
+    this.four.add(a)
+    const b = new Obj()
+    b.add(new THREE.Mesh(new THREE.BoxGeometry(25, 15, 60), new THREE.MeshBasicMaterial({
+      color: 0x4D515D,
+      transparent: true,
+      opacity: 0.5
+    })))
+    b.initBoundingBox();
+    a.initBoundingBox();
+    a.add(b)
     this.plane = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 1), new THREE.MeshPhongMaterial({
       color: 0x808080, // 基础颜色
       specular: 0xffffff, // 镜面高光颜色

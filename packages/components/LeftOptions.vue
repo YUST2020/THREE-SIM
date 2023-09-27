@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="options-outer top-add" @click="adding = !adding">
+        <div class="options-outer top-add flex-center" @click="adding = !adding">
             <svg-icon v-if="!adding" icon-class="add"></svg-icon>
             <template v-else>
                 <svg-icon icon-class="close"></svg-icon>
@@ -18,7 +18,7 @@
         </div>
         <div class="options-outer" @click.stop>
             <div v-for="item in options" :key="item.title" class="options-btn" draggable @click="setSelected(item)">
-                {{ item.name }}
+                {{ item.title }}
                 <div class="tip-dialog" style="left: 72px;">
                     <div class="add-text">
                         <div>{{ item.title }}</div>
@@ -75,13 +75,14 @@ export default {
     left: 50px;
     background-color: #1F2126;
     padding: 8px;
-    display: flex;
     border-radius: 10px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: visible;
     box-sizing: border-box;
+}
+::-webkit-scrollbar {
+    width: 0px;
 }
 
 .options-btn {
@@ -94,6 +95,7 @@ export default {
     justify-content: center;
     border-radius: 8px;
     position: relative;
+    margin-bottom: 4px;
     .tip-dialog {
         display: none;
         opacity: 0;

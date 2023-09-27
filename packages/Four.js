@@ -12,7 +12,7 @@ import LeftOptions from './components/LeftOptions.vue'
 import TWEEN from "@tweenjs/tween.js"
 import Stats from 'three/addons/libs/stats.module.js'
 // import RightConfig from './components/RightConfig.vue'
-import { getBoundingSize, getOriginSize, centerObject3D, getModel, moveObj, moveObjBySelf } from './utils/object'
+import { getBoundingSize, getOriginSize, centerObject3D, getModel, moveObj, moveObjBySelf, setBottomPosition } from './utils/object'
 import ResourceTracker from "./utils/TrackResource";
 
 // 设置边框，选中标签显示状态
@@ -79,8 +79,7 @@ export default class Four {
       0.1,
       1000
     );
-    this.camera.position.set(30, 30, 30);
-    // this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+    this.camera.position.set(30, -50, 80);
     this.camera.up.set(0, 0, 1)
 
     let ambient = new THREE.AmbientLight(0x444444, 3); // 添加光源  颜色和光照强度
@@ -127,6 +126,7 @@ export default class Four {
     initRenderer(this.css3dRenderer);
     // 添加鼠标控制器
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.target.set(30,0,0);
     this.controls.enableZoom = true;
     this.controls.enableKeys = true;
     // this.controls.enableDamping = true;
@@ -147,16 +147,17 @@ export default class Four {
 
     // 添加地面
     const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(120, 120, 120),
+      new THREE.PlaneGeometry(180, 180, 180),
       new THREE.MeshBasicMaterial({ color: 0x1E2229, side: THREE.DoubleSide })
     );
-    // plane.rotation.x = -Math.PI / 2;
+    plane.position.x = 60;
     this.scene.add(plane);
     // 地面边框
-    const borderGeometry = new THREE.PlaneGeometry(121, 121, 121); // 大一点的几何体
-    const borderColor = new THREE.Color(0x152F61); // 蓝色边框颜色
+    const borderGeometry = new THREE.PlaneGeometry(181, 181, 181);
+    const borderColor = new THREE.Color(0x152F61);
     const borderMaterial = new THREE.LineBasicMaterial({ color: borderColor, linewidth: 2 });
     const border = new THREE.LineSegments(new THREE.EdgesGeometry(borderGeometry), borderMaterial);
+    border.position.x = 60;
     this.scene.add(border);
 
     // 选中目标时需要的渲染器
@@ -243,16 +244,26 @@ export default class Four {
       raycaster.setFromCamera(mouse, this.camera);
       // 以包围盒作为物体识别的标识
       const checkObjs = []
-      for (let outer of this.scene.children) {
-        for (let i of outer.children) {
-          if (i.isBoundingBox) {
-            checkObjs.push(i)
+      // 获取可触发识别的物体
+      const getIdentifyBox = (obj) => {
+        if (obj.children?.length > 0) {
+          for (let child of obj.children) {
+            if (child.isBoundingBox) {
+              checkObjs.push(child)
+            }
+            getIdentifyBox(child)
           }
         }
       }
+      getIdentifyBox(this.scene)
+
       let intersects = raycaster.intersectObjects(checkObjs, false)
       batchSetChildrenVisible(object, false, true)
+      console.log('move',intersects,checkObjs);
       object = intersects.length > 0 ? intersects[0].object.parent : null
+      // 识别物体带有top属性优先选中
+      const topObject = intersects.find(val => val.object.top)
+      if(topObject) { object = topObject.object.parent }
       batchSetChildrenVisible(object, true, true)
     };
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
@@ -363,6 +374,8 @@ export default class Four {
   // 根据自身来进行相对运动
   static moveObjBySelf() { return moveObjBySelf(...arguments) }
 
+  // 根据物体底部中心的坐标移动物体
+  static setBottomPosition() { return setBottomPosition(...arguments) }
   // #endregion
 
   // 触发events中事件

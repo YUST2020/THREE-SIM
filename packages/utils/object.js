@@ -33,17 +33,18 @@ export const centerObject3D = (object) => {
   }
 const loadedMeshCache = {}
 const loader = new OBJLoader()
-// 获取模型的Object scale: 是否缩放至10
-export const getModel = (path, scale = true) => {
-    return new Promise((resolve, reject) => {
+// 获取模型的Object scale: 缩放值
+export const getModel = (path, scale = 1) => {
+    return new Promise((resolve) => {
         const cacheMesh = loadedMeshCache[path]
         // 有缓存过的就不重新加载
         if (cacheMesh) {
             resolve(cacheMesh.clone())
         } else {
+            console.log('模型loader解析中...', path);
             loader.load(path,
                 (loadedMesh) => {
-                    console.log('loadedMesh', loadedMesh);
+                    console.log('模型mesh合并中...', path, loadedMesh);
                     loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
                     // 递归遍历 Group 内的所有子对象，提取缓冲几何体
                     function extractBufferGeometries(object, bufferGeometries) {
@@ -60,8 +61,7 @@ export const getModel = (path, scale = true) => {
                     const mergedGeometry = BufferGeometryUtils.mergeGeometries(bufferGeometries);
                     mergedGeometry.center()
                     const mergedMesh = new THREE.Mesh(mergedGeometry)
-                    const boundingBoxSize = getBoundingSize(mergedMesh)
-                    const maxLen = Math.max(boundingBoxSize.x, boundingBoxSize.y, boundingBoxSize.z)
+                    
                     mergedMesh.position.set(0, 0, 0)
                     mergedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
                     // mergedMesh.material = new THREE.MeshStandardMaterial({
@@ -69,12 +69,10 @@ export const getModel = (path, scale = true) => {
                     //     metalness: 0.1,
                     //     roughness: 0.8,
                     //   })
-                    // 根据3边的最长边缩放到10单位
-                    if (scale && maxLen > 10) {
-                        const scale = 0.1 // 10 / maxLen
-                        mergedMesh.scale.set(scale, scale, scale);
-                    }
+                    scale = typeof scale === 'number' ? scale : 1
+                    mergedMesh.scale.set(scale, scale, scale); 
                     loadedMeshCache[path] = mergedMesh.clone()
+                    console.log('模型加载完毕', path);
                     resolve(mergedMesh)
                 })
         }
@@ -115,4 +113,12 @@ export const moveObjBySelf = async (obj, selfPosition = {}, options = {}) => {
         }
     }
 }
-export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf, centerObject3D }
+// 设置物体底部中心的坐标
+export const setBottomPosition = (obj, pos={}) => {
+    const {z} = getBoundingSize(obj)
+    const position = Object.assign({...obj.position},pos)
+    position.z += z / 2
+    obj.position.set(position.x, position.y, position.z)
+}
+export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf,
+     centerObject3D, setBottomPosition }
