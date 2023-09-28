@@ -12,7 +12,7 @@ import LeftOptions from './components/LeftOptions.vue'
 import TWEEN from "@tweenjs/tween.js"
 import Stats from 'three/addons/libs/stats.module.js'
 // import RightConfig from './components/RightConfig.vue'
-import { getBoundingSize, getOriginSize, centerObject3D, getModel, moveObj, moveObjBySelf, setBottomPosition } from './utils/object'
+import Utils from './utils/object'
 import ResourceTracker from "./utils/TrackResource";
 
 // 设置边框，选中标签显示状态
@@ -79,7 +79,7 @@ export default class Four {
       0.1,
       1000
     );
-    this.camera.position.set(30, -50, 80);
+    this.camera.position.set(-30, -35, 60);
     this.camera.up.set(0, 0, 1)
 
     let ambient = new THREE.AmbientLight(0x444444, 3); // 添加光源  颜色和光照强度
@@ -126,7 +126,7 @@ export default class Four {
     initRenderer(this.css3dRenderer);
     // 添加鼠标控制器
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.target.set(30,0,0);
+    this.controls.target.set(50,0,0);
     this.controls.enableZoom = true;
     this.controls.enableKeys = true;
     // this.controls.enableDamping = true;
@@ -147,13 +147,13 @@ export default class Four {
 
     // 添加地面
     const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(180, 180, 180),
+      new THREE.PlaneGeometry(240, 240, 240),
       new THREE.MeshBasicMaterial({ color: 0x1E2229, side: THREE.DoubleSide })
     );
     plane.position.x = 60;
     this.scene.add(plane);
     // 地面边框
-    const borderGeometry = new THREE.PlaneGeometry(181, 181, 181);
+    const borderGeometry = new THREE.PlaneGeometry(242, 242, 242);
     const borderColor = new THREE.Color(0x152F61);
     const borderMaterial = new THREE.LineBasicMaterial({ color: borderColor, linewidth: 2 });
     const border = new THREE.LineSegments(new THREE.EdgesGeometry(borderGeometry), borderMaterial);
@@ -188,6 +188,7 @@ export default class Four {
               this.state.mode = mode
               this.transformControls.setMode(mode)
             },
+            getObj: () => this.curObj,
             del: () => {
               const index = this.objs.findIndex(val => val.id === this.curObj.id)
               if (index !== -1) {
@@ -214,14 +215,6 @@ export default class Four {
   initEvent() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    let timer = null
-    // 防止拖拽和点击事件同步触发 100ms内的拖拽视为点击，否则阻止点击事件
-    this.controls.addEventListener('start', () => {
-      timer = setTimeout(() => {
-        clearTimeout(timer)
-        timer = null
-      }, 100);
-    })
     // 移动事件防抖
     let moveTimer = null
     // 标识当前鼠标位置对应的可交互物体
@@ -259,22 +252,23 @@ export default class Four {
 
       let intersects = raycaster.intersectObjects(checkObjs, false)
       batchSetChildrenVisible(object, false, true)
-      console.log('move',intersects,checkObjs);
-      object = intersects.length > 0 ? intersects[0].object.parent : null
       // 识别物体带有top属性优先选中
       const topObject = intersects.find(val => val.object.top)
-      if(topObject) { object = topObject.object.parent }
+      if (topObject) { 
+        object = topObject.object.parent 
+      }
+      else {
+        object = intersects.length > 0 ? intersects[0].object.parent : null
+      }
       batchSetChildrenVisible(object, true, true)
     };
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
     const onDocumentClick = () => {
-      if (!timer) return
       // 选取第一个可拖拽物体并对其执行选中
       console.log("object:", object);
       this.setSelected(object)
       // this.configInstance.init(this.curObj)
     };
-    console.log(this.dom);
     this.dom.addEventListener("click", onDocumentClick, false);
     // 监听当前按下的按键，用于控制相机移动
     document.addEventListener('keydown', (event) => {
@@ -295,8 +289,9 @@ export default class Four {
     const position = Object.assign({ x: 0, y: 0, z: 0 }, pos)
     const labelObject = new CSS2DObject(dom);
     const { x, y, z } = position
-    labelObject.position.set(x, y, z);
-    obj.add(labelObject);
+    labelObject.position.set(x, y, z)
+    obj.add(labelObject)
+    return labelObject
   }
   // 挂载事件 该处事件由内部dispatch触发
   addEvent(name, func) {
@@ -330,7 +325,13 @@ export default class Four {
     if (object) {
       batchSetChildrenVisible(object, true);
       this.curObj = object;
-      this.isEdit && this.transformControls.attach(this.curObj);
+      // 如果是不可编辑物体
+      if (object.static) {
+        this.curObj = null
+      } else {
+        this.isEdit && this.transformControls.attach(this.curObj);
+      }
+      
     } else {
       this.isEdit && this.transformControls.detach()
       batchSetChildrenVisible(this.curObj, false);
@@ -357,25 +358,28 @@ export default class Four {
   // #region 静态工具方法
 
   // 获取包围盒的大小
-  static getBoundingSize(obj) { return getBoundingSize(obj) }
+  static getBoundingSize(obj) { return Utils.getBoundingSize(obj) }
 
   // 获取没被缩放前的包围盒的大小
-  static getOriginSize(obj) { return getOriginSize(obj) }
+  static getOriginSize(obj) { return Utils.getOriginSize(obj) }
 
   // 将add了多个物体的Object居中
-  static centerObject3D() { return centerObject3D(...arguments) }
+  static centerObject3D() { return Utils.centerObject3D(...arguments) }
 
   // 获取模型的Object path: 路径 scale: 是否缩放至10
-  static getModel() { return getModel(...arguments) }
+  static getModel() { return Utils.getModel(...arguments) }
 
   // 世界坐标系根据指定轴顺序进行移动
-  static moveObj() { return moveObj(...arguments) }
+  static moveObj() { return Utils.moveObj(...arguments) }
 
   // 根据自身来进行相对运动
-  static moveObjBySelf() { return moveObjBySelf(...arguments) }
+  static moveObjBySelf() { return Utils.moveObjBySelf(...arguments) }
 
   // 根据物体底部中心的坐标移动物体
-  static setBottomPosition() { return setBottomPosition(...arguments) }
+  static setBottomPosition() { return Utils.setBottomPosition(...arguments) }
+
+  // 移动到物体的对应轴上
+  static moveToObjectTop() { return Utils.moveToObjectTop(...arguments) }
   // #endregion
 
   // 触发events中事件

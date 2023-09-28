@@ -16,7 +16,7 @@
         },
         methods: {
             handleClick() {
-                console.log('woanle');
+             
             }
         }
     }

@@ -32,7 +32,6 @@ export class MachineBed extends Obj {
         this.name = BED_NAME
         Utils.getModel('model/machineBed.obj', 0.1).then(res => {
             rotateToZ(res)
-            console.log(res.scale);
             this.add(res)
             this.initBoundingBox()
         })

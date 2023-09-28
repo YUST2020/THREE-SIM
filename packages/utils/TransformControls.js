@@ -365,7 +365,7 @@ class TransformControls extends Object3D {
     } else if (mode === "scale") {
       if (axis.search("XYZ") !== -1) {
         let d = this.pointEnd.length() / this.pointStart.length();
-
+        
         if (this.pointEnd.dot(this.pointStart) < 0) d *= -1;
 
         _tempVector2.set(d, d, d);

@@ -44,7 +44,6 @@ export const getModel = (path, scale = 1) => {
             console.log('模型loader解析中...', path);
             loader.load(path,
                 (loadedMesh) => {
-                    console.log('模型mesh合并中...', path, loadedMesh);
                     loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
                     // 递归遍历 Group 内的所有子对象，提取缓冲几何体
                     function extractBufferGeometries(object, bufferGeometries) {
@@ -120,5 +119,14 @@ export const setBottomPosition = (obj, pos={}) => {
     position.z += z / 2
     obj.position.set(position.x, position.y, position.z)
 }
+// 将一个物体移动到另一个物体的某个方向上方
+export const moveToObjectTop = (moveObj, targetObj, axis = 'z') => {
+    const targetBound = getBoundingSize(targetObj)
+    const moveBound = getBoundingSize(moveObj)
+    const worldPosition = new THREE.Vector3();
+    targetObj.getWorldPosition(worldPosition);
+    worldPosition[axis] += (targetBound[axis] + moveBound[axis]) / 2
+    moveObj(moveObj)
+}
 export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf,
-     centerObject3D, setBottomPosition }
+     centerObject3D, setBottomPosition, moveToObjectTop }

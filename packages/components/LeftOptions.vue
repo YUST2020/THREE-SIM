@@ -50,7 +50,6 @@ export default {
             this.addList = list
         },
         setObjs(list) {
-            console.log('objs::', list);
             this.options = list
         },
         addObj(item) {
@@ -77,14 +76,17 @@ export default {
     padding: 8px;
     border-radius: 10px;
     max-height: 500px;
-    overflow-y: auto;
-    overflow-x: visible;
     box-sizing: border-box;
+    overflow-y: clip;
 }
 ::-webkit-scrollbar {
     width: 0px;
 }
-
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 .options-btn {
     color: #fff;
     background-color: #2E3138;
@@ -96,6 +98,8 @@ export default {
     border-radius: 8px;
     position: relative;
     margin-bottom: 4px;
+    padding: 8px;
+    box-sizing: border-box;
     .tip-dialog {
         display: none;
         opacity: 0;
