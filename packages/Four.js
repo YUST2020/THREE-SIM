@@ -14,7 +14,7 @@ import Stats from 'three/addons/libs/stats.module.js'
 // import RightConfig from './components/RightConfig.vue'
 import Utils from './utils/object'
 import ResourceTracker from "./utils/TrackResource";
-import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
+import { ViewHelper } from './utils/ViewHelper';
 // 设置边框，选中标签显示状态
 const batchSetChildrenVisible = (obj, show, hover = false) => {
   if (!obj) return
@@ -219,19 +219,19 @@ export default class Four {
   // 初始化viewHelper
   initViewHelper() {
     this.viewHelper = new ViewHelper( this.camera, this.dom )
-    let viewHelperDiv=document.createElement('div')
-        viewHelperDiv.style.position='absolute'
-        viewHelperDiv.style.bottom=0
-        viewHelperDiv.style.right=0
-        viewHelperDiv.style.width='128px'
-        viewHelperDiv.style.height='128px'
-        viewHelperDiv.style.zIndex = 2
-        this.dom.appendChild(viewHelperDiv);
-        viewHelperDiv.addEventListener( 'mousedown', ( event ) => {
-            event.stopPropagation();
-            console.log(event,this.viewHelper);
-            this.viewHelper.handleClick( event );
-        } );
+    // let viewHelperDiv=document.createElement('div')
+    //     viewHelperDiv.style.position='absolute'
+    //     viewHelperDiv.style.bottom=0
+    //     viewHelperDiv.style.right=0
+    //     viewHelperDiv.style.width='128px'
+    //     viewHelperDiv.style.height='128px'
+    //     viewHelperDiv.style.zIndex = 2
+    //     this.dom.appendChild(viewHelperDiv);
+    //     viewHelperDiv.addEventListener( 'mousedown', ( event ) => {
+    //         event.stopPropagation();
+    //         console.log(event,this.viewHelper);
+    //         this.viewHelper.handleClick( event );
+    //     } );
 
   }
   // 初始化事件
