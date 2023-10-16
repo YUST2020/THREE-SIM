@@ -16,6 +16,8 @@ import {
 	Vector4
 } from 'three';
 
+// 2d位置偏移距离
+const offset2dY = 100
 class ViewHelper extends Object3D {
 
 	constructor( camera, domElement ) {
@@ -100,7 +102,7 @@ class ViewHelper extends Object3D {
 
 			point.set( 0, 0, 1 );
 			point.applyQuaternion( camera.quaternion );
-
+		
 			if ( point.x >= 0 ) {
 
 				posXAxisHelper.material.opacity = 1;
@@ -124,7 +126,6 @@ class ViewHelper extends Object3D {
 				negYAxisHelper.material.opacity = 1;
 
 			}
-
 			if ( point.z >= 0 ) {
 
 				posZAxisHelper.material.opacity = 1;
@@ -144,7 +145,7 @@ class ViewHelper extends Object3D {
 			renderer.clearDepth();
 
 			renderer.getViewport( viewport );
-			renderer.setViewport( x, 0, dim, dim );
+			renderer.setViewport( x, offset2dY, dim, dim );
 
 			renderer.render( this, orthoCamera );
 
@@ -161,15 +162,16 @@ class ViewHelper extends Object3D {
 		let radius = 0;
 
 		this.handleClick = function ( event ) {
-
+			
 			if ( this.animating === true ) return false;
 
 			const rect = domElement.getBoundingClientRect();
 			const offsetX = rect.left + ( domElement.offsetWidth - dim );
-			const offsetY = rect.top + ( domElement.offsetHeight - dim );
+			const offsetY = rect.top + ( domElement.offsetHeight - dim ) - offset2dY;
+			
 			mouse.x = ( ( event.clientX - offsetX ) / ( rect.right - offsetX ) ) * 2 - 1;
-			mouse.y = - ( ( event.clientY - offsetY ) / ( rect.bottom - offsetY ) ) * 2 + 1;
-
+			mouse.y = - ( ( event.clientY - offsetY ) / ( rect.bottom - offset2dY - offsetY ) ) * 2 + 1;
+			
 			raycaster.setFromCamera( mouse, orthoCamera );
 
 			const intersects = raycaster.intersectObjects( interactiveObjects );
