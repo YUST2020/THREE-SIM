@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="options-outer top-add flex-center" @click="adding = !adding">
+        <!-- <div class="options-outer top-add flex-center" @click="adding = !adding">
             <svg-icon v-if="!adding" icon-class="add"></svg-icon>
             <template v-else>
                 <svg-icon icon-class="close"></svg-icon>
@@ -15,16 +15,16 @@
                 </div>
             </template>
 
-        </div>
-        <div class="options-outer" @click.stop>
+        </div> -->
+        <div style="top: 50px" class="options-outer" @click.stop>
             <div v-for="item in options" :key="item.title" class="options-btn" draggable @click="setSelected(item)">
                 {{ item.title }}
-                <div class="tip-dialog" style="left: 72px;">
+                <!-- <div class="tip-dialog" style="left: 72px;">
                     <div class="add-text">
                         <div>{{ item.title }}</div>
                         <div>{{ item.subTitle }}</div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -70,14 +70,14 @@ export default {
 <style lang="less" scoped>
 .options-outer {
     position: absolute;
-    top: 20%;
+    top: 138px;
     left: 50px;
     background-color: #1F2126;
     padding: 8px;
     border-radius: 10px;
-    max-height: 500px;
+    // max-height: 500px;
     box-sizing: border-box;
-    overflow-y: clip;
+    // overflow-y: clip;
 }
 ::-webkit-scrollbar {
     width: 0px;
@@ -121,7 +121,7 @@ export default {
 }
 
 .top-add {
-    top: calc(20% - 88px);
+    top: 50px;
     width: 72px;
     height: 72px;
     border: 2px solid #3C7EFF;

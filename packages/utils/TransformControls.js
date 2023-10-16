@@ -53,6 +53,9 @@ class TransformControls extends Object3D {
     this.domElement = domElement;
     this.domElement.style.touchAction = "none"; // disable touch scroll
 
+    // 是否锁定长宽统一变化
+    this.lockScale = false
+
     const _gizmo = new TransformControlsGizmo();
     this._gizmo = _gizmo;
     this.add(_gizmo);
@@ -164,7 +167,9 @@ class TransformControls extends Object3D {
     this.domElement.addEventListener("pointermove", this._onPointerHover);
     this.domElement.addEventListener("pointerup", this._onPointerUp);
   }
-
+  setLockScale(data) {
+    this.lockScale = data
+  }
   // updateMatrixWorld  updates key transformation variables
   updateMatrixWorld() {
     if (this.object !== undefined) {
@@ -363,9 +368,9 @@ class TransformControls extends Object3D {
         object.quaternion.multiply(this._quaternionStart).normalize();
       }
     } else if (mode === "scale") {
-      if (axis.search("XYZ") !== -1) {
+      if (axis.search("XYZ") !== -1 || this.lockScale) {
         let d = this.pointEnd.length() / this.pointStart.length();
-        
+        d = (d - 1) / 5 + 1
         if (this.pointEnd.dot(this.pointStart) < 0) d *= -1;
 
         _tempVector2.set(d, d, d);
@@ -1022,9 +1027,9 @@ class TransformControlsGizmo extends Object3D {
         [new Mesh(lineGeometry2, matBlue), [0, 0, 0], [Math.PI / 2, 0, 0]],
         [new Mesh(new OctahedronGeometry(0.06), matBlue), [0, 0, 0.3], [0, 0, 0]]
       ],
-      XYZ: [
-        [new Mesh(new BoxGeometry(0.1, 0.1, 0.1), matWhiteTransparent.clone())],
-      ],
+      // XYZ: [
+      //   [new Mesh(new BoxGeometry(0.1, 0.1, 0.1), matWhiteTransparent.clone())],
+      // ],
     };
 
     const pickerScale = {
@@ -1063,9 +1068,9 @@ class TransformControlsGizmo extends Object3D {
           [-Math.PI / 2, 0, 0],
         ],
       ],
-      XYZ: [
-        [new Mesh(new BoxGeometry(0.2, 0.2, 0.2), matInvisible), [0, 0, 0]],
-      ],
+      // XYZ: [
+      //   [new Mesh(new BoxGeometry(0.2, 0.2, 0.2), matInvisible), [0, 0, 0]],
+      // ],
     };
 
     const helperScale = {

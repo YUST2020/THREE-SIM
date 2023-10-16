@@ -34,7 +34,7 @@ export const centerObject3D = (object) => {
 const loadedMeshCache = {}
 const loader = new OBJLoader()
 // 获取模型的Object scale: 缩放值
-export const getModel = (path, scale = 1) => {
+export const getModel = (path, scale = 1,  color= 0xB1B1B1 ) => {
     return new Promise((resolve) => {
         const cacheMesh = loadedMeshCache[path]
         // 有缓存过的就不重新加载
@@ -44,7 +44,7 @@ export const getModel = (path, scale = 1) => {
             console.log('模型loader解析中...', path);
             loader.load(path,
                 (loadedMesh) => {
-                    loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
+                    loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0xB1B1B1 })
                     // 递归遍历 Group 内的所有子对象，提取缓冲几何体
                     function extractBufferGeometries(object, bufferGeometries) {
                         if (object instanceof THREE.Mesh && object.geometry instanceof THREE.BufferGeometry) {
@@ -62,7 +62,7 @@ export const getModel = (path, scale = 1) => {
                     const mergedMesh = new THREE.Mesh(mergedGeometry)
                     
                     mergedMesh.position.set(0, 0, 0)
-                    mergedMesh.material = new THREE.MeshMatcapMaterial({ color: 0x4D515D })
+                    mergedMesh.material = new THREE.MeshMatcapMaterial({ color })
                     // mergedMesh.material = new THREE.MeshStandardMaterial({
                     //     color: 0x4D515D,
                     //     metalness: 0.1,
@@ -119,6 +119,13 @@ export const setBottomPosition = (obj, pos={}) => {
     position.z += z / 2
     obj.position.set(position.x, position.y, position.z)
 }
+// 设置物体顶部中心的坐标
+export const setTopPosition = (obj, pos={}) => {
+    const {z} = getBoundingSize(obj)
+    const position = Object.assign({...obj.position},pos)
+    position.z -= z / 2
+    obj.position.set(position.x, position.y, position.z)
+}
 // 将一个物体移动到另一个物体的某个方向上方
 export const moveToObjectTop = (moveObj, targetObj, axis = 'z') => {
     const targetBound = getBoundingSize(targetObj)
@@ -128,5 +135,16 @@ export const moveToObjectTop = (moveObj, targetObj, axis = 'z') => {
     worldPosition[axis] += (targetBound[axis] + moveBound[axis]) / 2
     moveObj(moveObj)
 }
+// 将一个模型的xyz缩放到指定长宽高
+export const scaleToSize = (obj, size={ x: 10, y: 10, z: 10} ) => {
+    const arr = ['x','y','z']
+    for (let axis of arr) {
+        if (typeof size[axis] === 'number') {
+            obj.scale[axis] = 1
+            const boundSize = getBoundingSize(obj)
+            obj.scale[axis] = size[axis] / boundSize[axis]
+        }
+    }
+}
 export default { getBoundingSize, getOriginSize, getModel, moveObj, moveObjBySelf,
-     centerObject3D, setBottomPosition, moveToObjectTop }
+     centerObject3D, setBottomPosition, moveToObjectTop, scaleToSize, setTopPosition }

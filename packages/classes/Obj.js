@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Object3D } from 'three'
 import TWEEN from "@tweenjs/tween.js"
-import { setBottomPosition } from '../utils/object'
+import { setBottomPosition, setTopPosition } from '../utils/object'
 export default class Obj extends Object3D {
   // position 位置信息 options：{}
   constructor(position, options = {}) {
@@ -20,13 +20,8 @@ export default class Obj extends Object3D {
       ...position
     }
     this.posInfo = posInfo
-    const { x, y, z, scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ, bottom } = posInfo
-    // 设置bottom代表根据底边中心进行定位
-    if (bottom) {
-      setBottomPosition(this, { x, y, z })
-    } else {
-      this.position.set(x, y, z);
-    }
+    const { scaleX, scaleY, scaleZ, rotateX, rotateY, rotateZ } = posInfo
+    this.resetPosition()
     this.scale.set(scaleX, scaleY, scaleZ)
     this.rotation.set(rotateX, rotateY, rotateZ)
     this.initBoundingBox();
@@ -42,9 +37,21 @@ export default class Obj extends Object3D {
     boundingBox.getSize(size);
     return size;
   }
+  resetPosition() {
+    const { x, y, z, bottom, top } = this.posInfo
+    // 设置bottom代表根据底边中心进行定位
+    if (bottom) {
+      setBottomPosition(this, { x, y, z })
+    } else if (top) {
+      setTopPosition(this,{x,y,z})
+    } else {
+      this.position.set(x, y, z);
+    }
+  }
   // 初始化hover和select的包围框
   initBoundingBox() {
-    setBottomPosition(this, { x: this.posInfo.x, y: this.posInfo.y, z: this.posInfo.z })
+    this.resetPosition()
+    if (this.options.static) return
     // 二次生成时对之前的先进行移除
     const removeList = [];
     for (let i of this.children) {
@@ -67,9 +74,7 @@ export default class Obj extends Object3D {
     const boundingBoxMesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z),
       new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
     boundingBoxMesh.isBoundingBox = true
-    if (this.options.top) {
-      boundingBoxMesh.top = true
-    }
+    boundingBoxMesh.topIndex = this.options.topIndex
     this.add(boundingBoxMesh)
     // hover时触发的线框
     let hoverBoxHelper = new THREE.Box3Helper(boundingBox, 0x00eeff);

@@ -14,7 +14,7 @@ import Stats from 'three/addons/libs/stats.module.js'
 // import RightConfig from './components/RightConfig.vue'
 import Utils from './utils/object'
 import ResourceTracker from "./utils/TrackResource";
-
+import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 // 设置边框，选中标签显示状态
 const batchSetChildrenVisible = (obj, show, hover = false) => {
   if (!obj) return
@@ -25,6 +25,7 @@ const batchSetChildrenVisible = (obj, show, hover = false) => {
     }
   }
 };
+const clock = new THREE.Clock();
 export default class Four {
   constructor(dom, options = {}) {
     this.dom = dom; // 外围dom元素
@@ -63,6 +64,8 @@ export default class Four {
     }
 
     this.init();
+    this.initViewHelper()
+    
     this.initEvent();
     this.animate();
   }
@@ -108,6 +111,7 @@ export default class Four {
     // 创建渲染器
     this.renderer = new THREE.WebGLRenderer({ antialias: true }); // 加入去除锯齿功能
     this.renderer.setSize(this.dom.clientWidth, this.dom.clientHeight);
+    this.renderer.autoClear = false
     this.dom.appendChild(this.renderer.domElement);
 
     const initRenderer = (renderer) => {
@@ -212,6 +216,25 @@ export default class Four {
     }
     // this.configInstance = mountVueToDom(RightConfig)
   }
+  // 初始化viewHelper
+  initViewHelper() {
+    this.viewHelper = new ViewHelper( this.camera, this.dom )
+    let viewHelperDiv=document.createElement('div')
+        viewHelperDiv.style.position='absolute'
+        viewHelperDiv.style.bottom=0
+        viewHelperDiv.style.right=0
+        viewHelperDiv.style.width='128px'
+        viewHelperDiv.style.height='128px'
+        viewHelperDiv.style.zIndex = 2
+        this.dom.appendChild(viewHelperDiv);
+        viewHelperDiv.addEventListener( 'mousedown', ( event ) => {
+            event.stopPropagation();
+            console.log(event,this.viewHelper);
+            this.viewHelper.handleClick( event );
+        } );
+
+  }
+  // 初始化事件
   initEvent() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -253,13 +276,12 @@ export default class Four {
       let intersects = raycaster.intersectObjects(checkObjs, false)
       batchSetChildrenVisible(object, false, true)
       // 识别物体带有top属性优先选中
-      const topObject = intersects.find(val => val.object.top)
-      if (topObject) { 
-        object = topObject.object.parent 
-      }
-      else {
-        object = intersects.length > 0 ? intersects[0].object.parent : null
-      }
+      intersects.sort((a,b) => {
+        const bIndex = b.object.topIndex ?? 1
+        const aIndex = a.object.topIndex ?? 1
+        return bIndex - aIndex
+      })
+      object = intersects.length > 0 ? intersects[0].object.parent : null
       batchSetChildrenVisible(object, true, true)
     };
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
@@ -325,13 +347,15 @@ export default class Four {
     if (object) {
       batchSetChildrenVisible(object, true);
       this.curObj = object;
-      // 如果是不可编辑物体
-      if (object.static) {
-        this.curObj = null
-      } else {
-        this.isEdit && this.transformControls.attach(this.curObj);
+      if (this.isEdit) {
+        // 如果是不可编辑物体
+        if (object.static) {
+          batchSetChildrenVisible(object, false);
+          this.curObj = null
+        } else {
+          this.transformControls.attach(this.curObj);
+        }
       }
-      
     } else {
       this.isEdit && this.transformControls.detach()
       batchSetChildrenVisible(this.curObj, false);
@@ -380,6 +404,9 @@ export default class Four {
 
   // 移动到物体的对应轴上
   static moveToObjectTop() { return Utils.moveToObjectTop(...arguments) }
+  
+  // 将obj缩放到固定尺寸
+  static scaleToSize() { return Utils.scaleToSize(...arguments) }
   // #endregion
 
   // 触发events中事件
@@ -407,10 +434,17 @@ export default class Four {
     if (this.keyboard['Space']) this.camera.position.z += moveSpeed;
 
     this.controls.update()
+    const delta = clock.getDelta();
+            if ( this.viewHelper.animating === true ) {
+                this.viewHelper.update( delta );
+            }
     // 渲染场景
+    this.renderer.clear()
     this.renderer.render(this.scene, this.camera);
+    this.viewHelper?.render(this.renderer)
     this.css2dRenderer.render(this.scene, this.camera);
     this.css3dRenderer.render(this.scene, this.camera);
+    
     this.stats?.update();
     TWEEN.update();
   }
