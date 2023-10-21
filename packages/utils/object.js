@@ -32,6 +32,7 @@ export const centerObject3D = (object) => {
     });
   }
 const loadedMeshCache = {}
+const colorMaterialCache = {}
 const loader = new OBJLoader()
 // 获取模型的Object scale: 缩放值
 export const getModel = (path, scale = 1, color= 0xB1B1B1 ) => {
@@ -44,7 +45,6 @@ export const getModel = (path, scale = 1, color= 0xB1B1B1 ) => {
             console.log('模型loader解析中...', path);
             loader.load(path,
                 (loadedMesh) => {
-                    loadedMesh.material = new THREE.MeshMatcapMaterial({ color })
                     // 递归遍历 Group 内的所有子对象，提取缓冲几何体
                     function extractBufferGeometries(object, bufferGeometries) {
                         if (object instanceof THREE.Mesh && object.geometry instanceof THREE.BufferGeometry) {
@@ -62,12 +62,14 @@ export const getModel = (path, scale = 1, color= 0xB1B1B1 ) => {
                     const mergedMesh = new THREE.Mesh(mergedGeometry)
                     
                     mergedMesh.position.set(0, 0, 0)
-                    mergedMesh.material = new THREE.MeshMatcapMaterial({ color })
-                    // mergedMesh.material = new THREE.MeshStandardMaterial({
-                    //     color: 0x4D515D,
-                    //     metalness: 0.1,
-                    //     roughness: 0.8,
-                    //   })
+                    if (colorMaterialCache[color]) {
+                        mergedMesh.material = colorMaterialCache[color]
+                    } else {
+                        const colorMaterial = new THREE.MeshMatcapMaterial({ color })
+                        mergedMesh.material = colorMaterial
+                        colorMaterialCache[color] = colorMaterial
+                    }
+                    
                     scale = typeof scale === 'number' ? scale : 1
                     mergedMesh.scale.set(scale, scale, scale); 
                     loadedMeshCache[path] = mergedMesh.clone()

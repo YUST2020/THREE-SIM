@@ -55,13 +55,13 @@ export default {
   },
   mounted() {
     this.four = new Four(this.$refs.container, { isEdit: true })
-    this.four.setAddableList([
-      { title: '机床', subTitle: '液压高低台', class: MachineBed },
-      { title: '上料机器', subTitle: '上料机器', class: LoadMachine },
-      { title: '下料机器', subTitle: '下料机器', class: UnLoadMachine }
-    ])
-    // const bed = new MachineBed({ z: 0, bottom: true })
-    // this.four.add(bed)
+    // this.four.setAddableList([
+    //   { title: '机床', subTitle: '液压高低台', class: MachineBed },
+    //   { title: '上料机器', subTitle: '上料机器', class: LoadMachine },
+    //   { title: '下料机器', subTitle: '下料机器', class: UnLoadMachine }
+    // ])
+    const bed = new MachineBed({ z: 0, bottom: true })
+    this.four.add(bed)
     // const loadM = new LoadMachine({ x: 12, y: -24, z: 6 })
     // this.four.add(loadM)
     // const unloadM = new UnLoadMachine({ x: 12, y: 24, z: 6 })
