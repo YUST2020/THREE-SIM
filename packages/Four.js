@@ -299,6 +299,13 @@ export default class Four {
     document.addEventListener('keyup', (event) => {
       this.keyboard[event.code] = false;
     })
+    this.windowResize = () => {
+      this.camera.aspect = this.dom.clientWidth / this.dom.clientHeight
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(this.dom.clientWidth, this.dom.clientHeight);
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+    }
+    window.addEventListener("resize", this.windowResize);
   }
   // #region 暴露给外部调用的方法
   // 初始化左侧可添加的列表 title: 标题 subTitle: 副标题 class 继承obj的类
@@ -373,6 +380,7 @@ export default class Four {
       cancelAnimationFrame(this.animationID) // 去除animationFrame
       let gl = this.renderer.domElement.getContext("webgl");
       gl && gl.getExtension("WEBGL_lose_context").loseContext();
+      window.removeEventListener("resize", this.windowResize);
     } catch (e) {
       console.log(e)
     }
