@@ -34,7 +34,7 @@ export const centerObject3D = (object) => {
 const loadedMeshCache = {}
 const loader = new OBJLoader()
 // 获取模型的Object scale: 缩放值
-export const getModel = (path, scale = 1,  color= 0xB1B1B1 ) => {
+export const getModel = (path, scale = 1, color= 0xB1B1B1 ) => {
     return new Promise((resolve) => {
         const cacheMesh = loadedMeshCache[path]
         // 有缓存过的就不重新加载
@@ -44,7 +44,7 @@ export const getModel = (path, scale = 1,  color= 0xB1B1B1 ) => {
             console.log('模型loader解析中...', path);
             loader.load(path,
                 (loadedMesh) => {
-                    loadedMesh.material = new THREE.MeshMatcapMaterial({ color: 0xB1B1B1 })
+                    loadedMesh.material = new THREE.MeshMatcapMaterial({ color })
                     // 递归遍历 Group 内的所有子对象，提取缓冲几何体
                     function extractBufferGeometries(object, bufferGeometries) {
                         if (object instanceof THREE.Mesh && object.geometry instanceof THREE.BufferGeometry) {
@@ -78,12 +78,12 @@ export const getModel = (path, scale = 1,  color= 0xB1B1B1 ) => {
     })    
 }
 // 直线移动到指定坐标
-const objLineMove = (obj, pos) => {
+const objLineMove = (obj, pos, speed = 1) => {
     pos = Object.assign({ x: obj.position.x, y: obj.position.y, z: obj.position.z }, pos)
     const moveLen = Math.abs(pos.x - obj.position.x) + Math.abs(pos.y - obj.position.y) + Math.abs(pos.z - obj.position.z)
     return new Promise((resolve) => {
         new TWEEN.Tween(obj.position)
-            .to({ ...pos }, moveLen * 100)
+            .to({ ...pos }, moveLen * 100 / speed)
             .easing(TWEEN.Easing.Quadratic.InOut)
             .start()
             .onComplete(() => { resolve() })
@@ -92,23 +92,25 @@ const objLineMove = (obj, pos) => {
 // 世界坐标系根据指定轴顺序进行移动
 export const moveObj = async (obj, toPosition = {}, options = {}) => {
     options = Object.assign({
-        order: ['x', 'y', 'z']
+        order: ['x', 'y', 'z'],
+        speed: 1
     }, options)
 
     for (let axis of options.order) {
         if (toPosition[axis] !== undefined) {
-            await objLineMove(obj, { [axis]: toPosition[axis] })
+            await objLineMove(obj, { [axis]: toPosition[axis] }, options.speed)
         }
     }
 }
 // 根据自身来进行相对运动
 export const moveObjBySelf = async (obj, selfPosition = {}, options = {}) => {
     options = Object.assign({
-        order: ['x', 'y', 'z']
+        order: ['x', 'y', 'z'],
+        speed: 1
     }, options)
     for (let axis of options.order) {
         if (selfPosition[axis] !== undefined) {
-            await objLineMove(obj, { [axis]: obj.position[axis] + selfPosition[axis] })
+            await objLineMove(obj, { [axis]: obj.position[axis] + selfPosition[axis] }, options.speed)
         }
     }
 }
