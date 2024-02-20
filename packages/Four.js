@@ -220,18 +220,17 @@ export default class Four {
   initViewHelper() {
     this.viewHelper = new ViewHelper( this.camera, this.dom )
     let viewHelperDiv=document.createElement('div')
-        viewHelperDiv.style.position='absolute'
-        viewHelperDiv.style.bottom='100px'
-        viewHelperDiv.style.right=0
-        viewHelperDiv.style.width='128px'
-        viewHelperDiv.style.height='128px'
-        viewHelperDiv.style.zIndex = 2
-        this.dom.appendChild(viewHelperDiv);
-        viewHelperDiv.addEventListener( 'mousedown', ( event ) => {
-            event.stopPropagation();
-            console.log(event,this.viewHelper);
-            this.viewHelper.handleClick( event );
-        } );
+    viewHelperDiv.style.position='absolute'
+    viewHelperDiv.style.bottom='100px'
+    viewHelperDiv.style.right=0
+    viewHelperDiv.style.width='128px'
+    viewHelperDiv.style.height='128px'
+    viewHelperDiv.style.zIndex = 2
+    this.dom.appendChild(viewHelperDiv);
+    viewHelperDiv.addEventListener('mousedown', ( event ) => {
+        event.stopPropagation();
+        this.viewHelper.handleClick( event );
+    } );
 
   }
   // 初始化事件
@@ -287,18 +286,17 @@ export default class Four {
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
     const onDocumentClick = () => {
       // 选取第一个可拖拽物体并对其执行选中
-      console.log("object:", object);
       this.setSelected(object)
       // this.configInstance.init(this.curObj)
     };
     this.dom.addEventListener("click", onDocumentClick, false);
     // 监听当前按下的按键，用于控制相机移动
-    document.addEventListener('keydown', (event) => {
-      this.keyboard[event.code] = true;
-    });
-    document.addEventListener('keyup', (event) => {
-      this.keyboard[event.code] = false;
-    })
+    // document.addEventListener('keydown', (event) => {
+    //   this.keyboard[event.code] = true;
+    // });
+    // document.addEventListener('keyup', (event) => {
+    //   this.keyboard[event.code] = false;
+    // })
     this.windowResize = () => {
       this.camera.aspect = this.dom.clientWidth / this.dom.clientHeight
       this.camera.updateProjectionMatrix();
