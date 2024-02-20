@@ -133,8 +133,9 @@ export default class Four {
     this.controls.target.set(50,0,0);
     this.controls.enableZoom = true;
     this.controls.enableKeys = true;
-    // this.controls.enableDamping = true;
-    // this.controls.dampingFactor = 0.1;
+
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.2;
 
     // 添加变换控制器
     this.transformControls = new TransformControls(
@@ -242,8 +243,14 @@ export default class Four {
     // 标识当前鼠标位置对应的可交互物体
     let object = null
 
+    // 是否在一次点击事件中移动了
+    let moveFlag = false
+    this.dom.addEventListener("mousedown", () => {
+      moveFlag = false
+    }, false);
     // 鼠标移动事件处理函数
     const onDocumentMouseMove = (event) => {
+      moveFlag = true
       if (moveTimer) {
         return
       } else {
@@ -285,6 +292,7 @@ export default class Four {
     };
     this.dom.addEventListener("mousemove", onDocumentMouseMove, false);
     const onDocumentClick = () => {
+      if (moveFlag) return
       // 选取第一个可拖拽物体并对其执行选中
       this.setSelected(object)
       // this.configInstance.init(this.curObj)
@@ -375,6 +383,7 @@ export default class Four {
       this.renderer.dispose();
       this.renderer.forceContextLoss();
       this.renderer.content = null;
+      this.controls.dispose()
       cancelAnimationFrame(this.animationID) // 去除animationFrame
       let gl = this.renderer.domElement.getContext("webgl");
       gl && gl.getExtension("WEBGL_lose_context").loseContext();
