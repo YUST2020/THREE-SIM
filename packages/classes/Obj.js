@@ -11,7 +11,6 @@ export default class Obj extends Object3D {
       speed: 1,
       ...options
     };
-    this.isMoving = false
     // 设置形状材质
     const posInfo = {
       x: 0, y: 0, z: 0,
