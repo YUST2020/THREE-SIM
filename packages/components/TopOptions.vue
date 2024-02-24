@@ -2,22 +2,22 @@
     <div class="options-outer" @click.stop>
         <div class="options-btn" :class="{'option-selected': this.state.mode === 'translate'}" @click="setMode('translate')">
             <svg-icon iconClass="rotate"></svg-icon>
-            <div class="top-tips">旋转模式</div>
+            <div class="top-tips">{{ t('RotateMode') }}</div>
         </div>
         <div class="options-btn" :class="{'option-selected': this.state.mode === 'scale'}" @click="setMode('scale')">
             <svg-icon iconClass="scale"></svg-icon>
-            <div class="top-tips">缩放模式</div>
+            <div class="top-tips">{{ t('ZoomMode')}}</div>
         </div>
         <div class="options-btn">
             <svg-icon iconClass="mirror"></svg-icon>
-            <div class="top-tips">镜像</div>
+            <div class="top-tips">{{ t('mirror') }}</div>
             <div class="top-tips" style="top: 64px">
                 <div class="option-child-btn flex-center" @click="mirror('x')">
-                    <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>x方向镜像</div>
+                    <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>X{{ t('directionMirror') }}</div>
                 <div class="option-child-btn flex-center" @click="mirror('y')">
-                    <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>y方向镜像</div>
+                    <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>Y{{ t('directionMirror') }}</div>
                 <div class="option-child-btn flex-center" @click="mirror('z')">
-                    <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>z方向镜像</div>
+                    <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>X{{ t('directionMirror') }}</div>
             </div>
         </div>
         <!-- <div class="options-btn" @click="delObj">
@@ -29,6 +29,7 @@
 
 <script>
 import SvgIcon from './SvgIcon.vue'
+import { t } from '../lang/index'
 export default {
   components: { SvgIcon },
     props: ['emitMethods','state'],
@@ -41,6 +42,9 @@ export default {
         
     },
     methods: {
+        t() {
+            return t(...arguments)
+        },
         setMode(mode) {
             this.emitMethods.setMode(mode)
         },
@@ -87,7 +91,7 @@ export default {
         position: absolute;
         top: -40px;
         white-space: nowrap;
-        padding: 4px 10px;
+        padding: 4px 6px;
         background-color: #27282F;
         border-radius: 4px;
         font-size: 16px;
@@ -105,11 +109,12 @@ export default {
     background-color: #3C7EFF !important;
 }
 .option-child-btn {
-    width: 120px;
+    min-width: 120px;
     height: 40px;
     border-radius: 4px;
     font-size: 16px;
     gap: 8px;
+    padding: 0 4px;
     &:hover {
         background: rgba(62, 65, 76, 0.8);
     }

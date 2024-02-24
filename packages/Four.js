@@ -15,6 +15,7 @@ import Stats from 'three/addons/libs/stats.module.js'
 import Utils from './utils/object'
 import ResourceTracker from "./utils/TrackResource";
 import { ViewHelper } from './utils/ViewHelper';
+import { setLang } from "./lang";
 // 设置边框，选中标签显示状态
 const batchSetChildrenVisible = (obj, show, hover = false) => {
   if (!obj) return
@@ -315,6 +316,9 @@ export default class Four {
   }
   // #region 暴露给外部调用的方法
   // 初始化左侧可添加的列表 title: 标题 subTitle: 副标题 class 继承obj的类
+  static setLang() {
+    return setLang(...arguments)
+  }
   setAddableList(list) {
     this.leftVueInstance.setAddableList(list)
   }
