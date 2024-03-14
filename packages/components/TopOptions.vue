@@ -11,7 +11,7 @@
         <div class="options-btn">
             <svg-icon iconClass="mirror"></svg-icon>
             <div class="top-tips">{{ t('mirror') }}</div>
-            <div class="top-tips" style="top: 64px">
+            <div class="top-tips" style="top: 56px">
                 <div class="option-child-btn flex-center" @click="mirror('x')">
                     <svg-icon iconClass="diamond" style="font-size: 24px;"></svg-icon>X{{ t('directionMirror') }}</div>
                 <div class="option-child-btn flex-center" @click="mirror('y')">
@@ -86,6 +86,7 @@ export default {
         font-size: 32px;
     }
     .top-tips {
+        visibility: hidden;
         opacity: 0;
         transition: opacity 0.5s ease;
         position: absolute;
@@ -103,6 +104,7 @@ export default {
     cursor: pointer;
     .top-tips {
         opacity: 1;
+        visibility:visible;
     }
 }
 .option-selected {
