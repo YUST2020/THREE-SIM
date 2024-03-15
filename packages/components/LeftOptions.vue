@@ -16,7 +16,7 @@
             </template>
 
         </div> -->
-        <div style="top: 50px" class="options-outer" @click.stop>
+        <div style="top: 50px" class="three-left-options options-outer" @click.stop>
             <div v-for="item in options" :key="item.title" class="options-btn" draggable @click="setSelected(item)">
                 {{ item.title }}
                 <!-- <div class="tip-dialog" style="left: 72px;">
