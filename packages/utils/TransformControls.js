@@ -18,6 +18,9 @@ import {
   SphereGeometry,
   TorusGeometry,
   Vector3,
+  CanvasTexture,
+  SpriteMaterial,
+  Sprite
 } from "three";
 
 const _raycaster = new Raycaster();
@@ -661,7 +664,28 @@ function onPointerUp(event) {
 
   this.pointerUp(this._getPointer(event));
 }
+function getSpriteMaterial(text = null ) {
 
+  const canvas = document.createElement( 'canvas' );
+  canvas.width = 64;
+  canvas.height = 64;
+
+  const context = canvas.getContext( '2d' );
+  if ( text !== null ) {
+    context.font = '12px Arial';
+    context.textAlign = 'center';
+    context.fillStyle = '#fff';
+    context.fillText( text, 31, 40 );
+  }
+
+  const texture = new CanvasTexture( canvas );
+
+  const spriteMesh = new Sprite(new SpriteMaterial( { map: texture, toneMapped: false } ));
+  spriteMesh.scale.set(0.5,0.5,0.5)
+  spriteMesh.material.depthTest = false
+  return spriteMesh
+
+}
 function intersectObjectWithRay(object, raycaster, includeInvisible) {
   const allIntersections = raycaster.intersectObject(object, true);
 
@@ -779,13 +803,15 @@ class TransformControlsGizmo extends Object3D {
 
     const arrowGeometry = new CylinderGeometry(0, 0.05, 0.1, 12);
     arrowGeometry.translate(0, 0.05, 0);
+    
+    
 
     // 底部拖拽的圆弧角
     const bottomGeometry = new TorusGeometry(0.4, 0.02, 16, 100, Math.PI / 2);
     // 实际圆弧角可拖拽的物体
     const bottomPickGeometry = new TorusGeometry(0.4, 0.04, 16, 100, Math.PI / 2);
     // 旋转是的圆环
-    const ringGeometry = new TorusGeometry(0.4, 0.02, 16, 100, Math.PI * 2)
+    // const ringGeometry = new TorusGeometry(0.4, 0.02, 16, 100, Math.PI * 2)
     
     const scaleHandleGeometry = new BoxGeometry(0.08, 0.08, 0.08);
     scaleHandleGeometry.translate(0, 0.04, 0);
@@ -852,6 +878,15 @@ class TransformControlsGizmo extends Object3D {
       RX: [[new Mesh(bottomGeometry, matLightRed), [0, 0, 0], [0, -Math.PI / 2, 0]]],
       // SRZ: [[new Mesh(ringGeometry, matLightBlue), [0, 0, 1], [0, 0, 0]]]
     };
+    const xText = getSpriteMaterial('X')
+    xText.position.set(0.6,0,0.1)
+    gizmoTranslate.X[0][0].add(xText)
+    const yText = getSpriteMaterial('Y')
+    yText.position.set(0,0.6,0.1)
+    gizmoTranslate.Y[0][0].add(yText)
+    const zText = getSpriteMaterial('Z')
+    zText.position.set(0.1,0,0.6)
+    gizmoTranslate.Z[0][0].add(zText)
     // 触发hover时的碰撞体积
     const pickerTranslate = {
       X: [
@@ -1104,11 +1139,11 @@ class TransformControlsGizmo extends Object3D {
     };
 
     
-    const rotateRing = {
-      RZ: [[new Mesh(ringGeometry, matLightBlue), [0, 0, 0], [0, 0, 0]]],
-      RY: [[new Mesh(ringGeometry, matLightGreen), [0, 0, 0], [Math.PI / 2, 0, 0]]],
-      RX: [[new Mesh(ringGeometry, matLightRed), [0, 0, 0], [0, -Math.PI / 2, 0]]],
-    }
+    // const rotateRing = {
+    //   RZ: [[new Mesh(ringGeometry, matLightBlue), [0, 0, 0], [0, 0, 0]]],
+    //   RY: [[new Mesh(ringGeometry, matLightGreen), [0, 0, 0], [Math.PI / 2, 0, 0]]],
+    //   RX: [[new Mesh(ringGeometry, matLightRed), [0, 0, 0], [0, -Math.PI / 2, 0]]],
+    // }
     // #endregion
 
     // Creates an Object3D with gizmos described in custom hierarchy definition.
