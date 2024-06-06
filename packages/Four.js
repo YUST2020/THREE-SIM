@@ -319,6 +319,10 @@ export default class Four {
   static setLang() {
     return setLang(...arguments)
   }
+  // 是否暂停动画
+  setPausing(pausing) {
+    this.pausing = !!pausing
+  }
   setAddableList(list) {
     this.leftVueInstance.setAddableList(list)
   }
@@ -438,29 +442,17 @@ export default class Four {
   }
   animate() {
     this.animationID = requestAnimationFrame(() => this.animate());
-    const initZ = this.camera.position.z
-    const direction = new THREE.Vector3(); // 当前朝向的向量
-    this.camera.getWorldDirection(direction);
-    direction.normalize();
-    const moveSpeed = 0.5
-    if (this.keyboard['KeyW']) this.camera.position.addScaledVector(direction, moveSpeed)
-    if (this.keyboard['KeyS']) this.camera.position.addScaledVector(direction, -moveSpeed)
-    const vertical = new THREE.Vector3();
-    vertical.crossVectors(direction, this.camera.up).normalize();
-    if (this.keyboard['KeyA']) this.camera.position.addScaledVector(vertical, -moveSpeed);
-    if (this.keyboard['KeyD']) this.camera.position.addScaledVector(vertical, moveSpeed);
-    this.camera.position.z = initZ
-    if (this.keyboard['Space']) this.camera.position.z += moveSpeed;
-
-    this.controls.update()
-    const delta = clock.getDelta();
-            if ( this.viewHelper.animating === true ) {
-                this.viewHelper.update( delta );
-            }
-    // 渲染场景
-    this.renderer.clear()
-    this.renderer.render(this.scene, this.camera);
-    this.viewHelper?.render(this.renderer)
+    if (!this.pausing) {
+       this.controls.update()
+        const delta = clock.getDelta();
+        if ( this.viewHelper.animating === true ) {
+            this.viewHelper.update( delta );
+        }
+        // 渲染场景
+        this.renderer.clear()
+        this.renderer.render(this.scene, this.camera);
+        this.viewHelper?.render(this.renderer)
+    }  
     this.css2dRenderer.render(this.scene, this.camera);
     this.css3dRenderer.render(this.scene, this.camera);
     
