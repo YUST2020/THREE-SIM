@@ -11,11 +11,10 @@ export const getBoundingSize = (obj) => {
 }
 // 获取没被缩放前的包围盒的大小
 export const getOriginSize = (obj) => {
-    const size = getBoundingSize(obj)
-    size.x /= obj.scale.x
-    size.y /= obj.scale.y
-    size.z /= obj.scale.z
-    return size
+    const originObj = obj.clone()
+    originObj.scale.set(1, 1, 1)
+    originObj.rotation.set(0, 0, 0)
+    return getBoundingSize(originObj)
 }
 // 将add了多个物体的Object居中
 export const centerObject3D = (object) => {
